@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { ServiceTypeService } from './core/services/service-type.service';
@@ -12,13 +12,17 @@ import { ServiceType } from './core/models/service-type.model';
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
-  services: ServiceType[] = [];
+  services = signal<ServiceType[]>([]);
 
   constructor(private serviceTypeService: ServiceTypeService) {}
 
   ngOnInit(): void {
+    console.log("Initialisation du composant, appel de l'API...");
     this.serviceTypeService.getAll().subscribe({
-      next: (data) => this.services = data,
+      next: (data) => {
+        console.log("Données reçues :", data);
+        this.services.set(data);
+      },
       error: (err) => console.error('Erreur API :', err)
     });
   }

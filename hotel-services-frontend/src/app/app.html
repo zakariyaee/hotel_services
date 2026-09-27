@@ -1,7 +1,11 @@
 <h2>Services disponibles</h2>
 <ul>
-  <li *ngFor="let s of services">
-    {{ s.name }} — {{ s.category }}
-  </li>
+  @for (s of services(); track s.id) {
+    <li>
+      {{ s.name }} — {{ s.category }}
+    </li>
+  } @empty {
+    <li>Chargement en cours ou aucun service trouvé...</li>
+  }
 </ul>
 <router-outlet></router-outlet>
