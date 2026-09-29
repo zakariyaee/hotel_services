@@ -4,15 +4,20 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "service_type")
+@Table(name = "app_user")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
-public class ServiceType {
+public class AppUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
-    private String category;
-    private String department;
+    @Column(length = 50, unique = true)
+    private String username;
+
+    @Column(length = 255)
+    private String password;
+
+    @Column(length = 30)
+    private String role;
 }
