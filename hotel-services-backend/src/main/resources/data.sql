@@ -1,3 +1,1 @@
-INSERT INTO service_type (name, category) VALUES ('Room Service', 'Restauration');
-INSERT INTO service_type (name, category) VALUES ('Ménage', 'Housekeeping');
-INSERT INTO service_type (name, category) VALUES ('Blanchisserie', 'Housekeeping');
+INSERT IGNORE INTO app_user (username, password, role) VALUES ('412', '123456', 'GUEST');

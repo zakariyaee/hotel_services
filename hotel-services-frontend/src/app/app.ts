@@ -1,29 +1,33 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
-import { ServiceTypeService } from './core/services/service-type.service';
-import { ServiceType } from './core/models/service-type.model';
+import { Component, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from './core/services/auth.service';
 
-@Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, CommonModule],
-  templateUrl: './app.html',
-  styleUrl: './app.scss',
-})
-export class App implements OnInit {
-  services = signal<ServiceType[]>([]);
-
-  constructor(private serviceTypeService: ServiceTypeService) {}
-
-  ngOnInit(): void {
-    console.log("Initialisation du composant, appel de l'API...");
-    this.serviceTypeService.getAll().subscribe({
-      next: (data) => {
-        console.log("Données reçues :", data);
-        this.services.set(data);
+@Component({ selector: 'app-root', standalone: true, imports: [FormsModule], templateUrl: './app.html', styleUrl: './app.scss' })
+export class App {
+  username = '412';
+  password = '123456';
+  isConnected = signal(false);
+  connectedUser = signal('');
+  errorMessage = signal('');
+  isLoading = signal(false);
+  constructor(private authService: AuthService) {}
+  login(): void {
+    this.errorMessage.set('');
+    this.isLoading.set(true);
+    this.authService.login(this.username, this.password).subscribe({
+      next: user => {
+        this.connectedUser.set(user.username);
+        this.isConnected.set(true);
+        this.isLoading.set(false);
       },
-      error: (err) => console.error('Erreur API :', err)
+      error: () => {
+        this.errorMessage.set('Nom d’utilisateur ou code d’accès incorrect.');
+        this.isLoading.set(false);
+      },
     });
+  }
+  logout(): void {
+    this.isConnected.set(false);
+    this.connectedUser.set('');
   }
 }
