@@ -1,8 +1,8 @@
 <div class="connected-page">
   <header class="connected-header">
-    <div class="brand"><span class="brand-mark">⌁</span> </div>
+    <div class="brand"><span class="brand-mark">⌁</span> MAISON <strong>ÉLAN</strong></div>
     <div class="connected-actions">
-      <span class="connected-status"><i></i> Connected</span>
+      <span class="connected-status"><i></i> Connected · {{ currentUser()?.role }}</span>
       <button class="avatar" type="button" (click)="logout()">{{ currentUser()?.username?.slice(0, 2)?.toUpperCase() }}</button>
     </div>
   </header>

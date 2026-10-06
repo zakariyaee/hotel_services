@@ -11,8 +11,8 @@ import { AuthService } from '../../../../core/services/auth.service';
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
-  username = '412';
-  password = '123456';
+  username = 'client1';
+  password = 'client123';
   readonly errorMessage = signal('');
   readonly isLoading = signal(false);
 
@@ -21,15 +21,23 @@ export class LoginComponent {
   login(): void {
     this.errorMessage.set('');
     this.isLoading.set(true);
-    this.authService.login(this.username, this.password).subscribe({
-      next: () => {
+    this.authService.login({ username: this.username, password: this.password }).subscribe({
+      next: user => {
         this.isLoading.set(false);
-        this.router.navigate(['/connected']);
+        this.router.navigate([this.routeForRole(user.role)]);
       },
       error: () => {
-        this.errorMessage.set('Nom d’utilisateur ou code d’accès incorrect.');
+        this.errorMessage.set('Identifiant ou mot de passe incorrect.');
         this.isLoading.set(false);
       },
     });
+  }
+
+  private routeForRole(role: string): string {
+    switch (role.toUpperCase()) {
+      case 'ADMIN': return '/admin';
+      case 'STAFF': return '/staff';
+      default: return '/client';
+    }
   }
 }

@@ -1,31 +1,17 @@
 <main class="login-page">
   <section class="login-visual">
-    <div class="brand brand-light"><span class="brand-mark">⌁</span></div>
-    <div class="visual-copy">
-      <span class="eyebrow eyebrow-light">Votre séjour, simplement</span>
-      <h1>Tout le confort de l’hôtel, à portée de main.</h1>
-      <p>Un besoin en chambre ? Notre équipe s’en occupe.</p>
-    </div>
+    <div class="brand brand-light"><span class="brand-mark">⌁</span> MAISON <strong>ÉLAN</strong></div>
+    <div class="visual-copy"><span class="eyebrow eyebrow-light">Votre séjour, simplement</span><h1>Tout le confort de l’hôtel, à portée de main.</h1><p>Un besoin en chambre ? Notre équipe s’en occupe.</p></div>
   </section>
-
-  <section class="login-panel">
-    <div class="login-form">
-      <div class="brand"><span class="brand-mark">⌁</span> </div>
-      <span class="eyebrow">Bienvenue</span>
-      <h1>Accédez à votre espace</h1>
-      <p class="muted">Saisissez les informations reçues lors de votre arrivée.</p>
-
-      <form (ngSubmit)="login()">
-        <label class="field"><span>Numéro de chambre</span><input [(ngModel)]="username" name="username" required /></label>
-        <label class="field"><span>Code d’accès</span><input [(ngModel)]="password" name="password" type="password" required /></label>
-        @if (errorMessage()) { <p class="error-message">{{ errorMessage() }}</p> }
-        <button class="primary-button" type="submit" [disabled]="isLoading()">
-          {{ isLoading() ? 'Connexion...' : 'Accéder à mon séjour →' }}
-        </button>
-      </form>
-
-      <p class="secure-note">✓ Accès sécurisé, valable pendant votre séjour</p>
-      <p class="help-copy">Besoin d’aide ? <button type="button">Contacter la réception</button></p>
-    </div>
-  </section>
+  <section class="login-panel"><div class="login-form">
+    <div class="brand"><span class="brand-mark">⌁</span> MAISON <strong>ÉLAN</strong></div>
+    <span class="eyebrow">Bienvenue</span><h1>Accédez à votre espace</h1><p class="muted">Connectez-vous selon votre profil pour accéder à votre espace.</p>
+    <form (ngSubmit)="login()">
+      <label class="field"><span>Identifiant</span><input [(ngModel)]="username" name="username" placeholder="Votre identifiant" required /></label>
+      <label class="field"><span>Mot de passe</span><input [(ngModel)]="password" name="password" type="password" placeholder="Votre mot de passe" required /></label>
+      @if (errorMessage()) { <p class="error-message">{{ errorMessage() }}</p> }
+      <button class="primary-button" type="submit" [disabled]="isLoading()">{{ isLoading() ? 'Connexion...' : 'Se connecter →' }}</button>
+    </form>
+    <p class="secure-note">✓ Accès sécurisé pour tous les acteurs de l’hôtel</p>
+  </div></section>
 </main>
