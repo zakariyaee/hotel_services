@@ -1,0 +1,46 @@
+.welcome-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  background:
+    linear-gradient(180deg, rgba(16, 46, 40, .48), rgba(16, 46, 40, .94)),
+    linear-gradient(135deg, rgba(180, 151, 95, .18), transparent 45%),
+    url('https://images.unsplash.com/photo-1731336478850-6bce7235e320?auto=format&fit=crop&w=1800&q=85') center/cover;
+}
+
+.welcome-header {
+  height: 86px;
+  padding: 0 clamp(24px, 6vw, 90px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,.16);
+}
+
+.brand { display:flex; align-items:center; gap:9px; font:600 14px/1 'Manrope', sans-serif; letter-spacing:.14em; white-space:nowrap; }
+.brand strong { font-weight:800; }
+.brand-light { color:white; }
+.brand-mark { width:29px; height:29px; border:1.5px solid currentColor; border-radius:50%; display:grid; place-items:center; font-size:22px; transform:rotate(-12deg); }
+.header-link { color:white; text-decoration:none; font-size:13px; font-weight:700; border-bottom:1px solid rgba(255,255,255,.65); padding-bottom:4px; }
+
+.welcome-content {
+  width: min(720px, calc(100% - 48px));
+  margin: auto clamp(24px, 12vw, 180px);
+}
+
+.eyebrow { display:block; margin-bottom:12px; color:#e2d0aa; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+.welcome-content h1 { max-width:700px; margin:0; font:700 clamp(46px, 7vw, 88px)/1.02 'Manrope', sans-serif; letter-spacing:-.05em; }
+.welcome-content p { max-width:490px; margin:24px 0 32px; color:#e5e9e7; font-size:17px; line-height:1.6; }
+.primary-button { display:inline-flex; align-items:center; gap:18px; min-height:48px; padding:0 21px; border-radius:10px; background:white; color:var(--forest); text-decoration:none; font-size:13px; font-weight:800; box-shadow:0 8px 20px rgba(0,0,0,.12); }
+.primary-button span { font-size:20px; line-height:0; }
+.welcome-footer { padding:0 clamp(24px, 6vw, 90px) 28px; display:flex; justify-content:space-between; color:rgba(255,255,255,.68); font-size:11px; letter-spacing:.04em; }
+
+@media (max-width:700px) {
+  .welcome-header { height:72px; }
+  .header-link { font-size:11px; }
+  .welcome-content { margin: auto 24px; }
+  .welcome-content h1 { font-size:48px; }
+  .welcome-content p { font-size:14px; }
+  .welcome-footer { padding-bottom:20px; font-size:9px; }
+}
