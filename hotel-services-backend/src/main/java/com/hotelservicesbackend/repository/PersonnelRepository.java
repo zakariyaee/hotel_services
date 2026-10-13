@@ -1,6 +1,6 @@
 package com.hotelservicesbackend.repository;
 
-import com.hotelservicesbackend.model.Personnel;
+import com.hotelservicesbackend.entity.Personnel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

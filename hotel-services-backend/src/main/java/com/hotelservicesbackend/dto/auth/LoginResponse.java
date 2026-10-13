@@ -1,3 +1,3 @@
 package com.hotelservicesbackend.dto.auth;
 
-public record LoginResponse(String username, String role) {}
+public record LoginResponse(String email, String role) {}

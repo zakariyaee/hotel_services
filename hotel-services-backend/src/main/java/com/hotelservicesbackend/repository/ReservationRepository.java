@@ -1,7 +1,7 @@
 package com.hotelservicesbackend.repository;
 
-import com.hotelservicesbackend.model.Reservation;
-import com.hotelservicesbackend.model.enums.StatutReservation;
+import com.hotelservicesbackend.entity.Reservation;
+import com.hotelservicesbackend.entity.enums.StatutReservation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

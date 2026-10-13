@@ -1,4 +1,4 @@
-package com.hotelservicesbackend.model.enums;
+package com.hotelservicesbackend.entity.enums;
 
 public enum PrioriteDemande {
     BASSE,

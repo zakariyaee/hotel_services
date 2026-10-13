@@ -1,4 +1,4 @@
-package com.hotelservicesbackend.model;
+package com.hotelservicesbackend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;

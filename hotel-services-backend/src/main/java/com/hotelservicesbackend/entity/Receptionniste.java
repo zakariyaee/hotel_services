@@ -1,4 +1,4 @@
-package com.hotelservicesbackend.model;
+package com.hotelservicesbackend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
@@ -16,26 +16,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "client")
+@Table(name = "receptionniste")
 @PrimaryKeyJoinColumn(name = "idUtilisateur")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Client extends Utilisateur {
+public class Receptionniste extends Employe {
 
-    private boolean reservationStatut;
+    @Column(length = 100)
+    private String posteReception;
 
-    @Column(length = 10)
-    private String languePreferee;
+    @Column(length = 50)
+    private String extensionTelephonique;
 
-    private boolean preferenceNotification;
-
-    @OneToMany(mappedBy = "client", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "receptionniste", fetch = FetchType.LAZY)
     @JsonIgnore
-    private List<Reservation> reservations = new ArrayList<>();
+    private List<Affectation> affectations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "client", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "receptionniste", fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Demande> demandes = new ArrayList<>();
 }

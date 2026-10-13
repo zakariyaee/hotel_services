@@ -1,6 +1,6 @@
 package com.hotelservicesbackend.controller;
 
-import com.hotelservicesbackend.model.Departement;
+import com.hotelservicesbackend.entity.Departement;
 import com.hotelservicesbackend.repository.DepartementRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,6 +1,6 @@
 package com.hotelservicesbackend.controller;
 
-import com.hotelservicesbackend.model.Chambre;
+import com.hotelservicesbackend.entity.Chambre;
 import com.hotelservicesbackend.repository.ChambreRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,7 @@
 package com.hotelservicesbackend.repository;
 
-import com.hotelservicesbackend.model.Notification;
-import com.hotelservicesbackend.model.enums.StatutNotification;
+import com.hotelservicesbackend.entity.Notification;
+import com.hotelservicesbackend.entity.enums.StatutNotification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

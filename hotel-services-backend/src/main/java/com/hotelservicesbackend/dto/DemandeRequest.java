@@ -1,6 +1,6 @@
 package com.hotelservicesbackend.dto;
 
-import com.hotelservicesbackend.model.enums.PrioriteDemande;
+import com.hotelservicesbackend.entity.enums.PrioriteDemande;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -1,8 +1,8 @@
-package com.hotelservicesbackend.model;
+package com.hotelservicesbackend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.hotelservicesbackend.model.enums.Role;
+import com.hotelservicesbackend.entity.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

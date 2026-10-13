@@ -1,6 +1,6 @@
 package com.hotelservicesbackend.repository;
 
-import com.hotelservicesbackend.model.CaracteristiquesServices;
+import com.hotelservicesbackend.entity.CaracteristiquesServices;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

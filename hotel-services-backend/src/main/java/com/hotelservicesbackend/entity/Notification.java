@@ -1,6 +1,6 @@
-package com.hotelservicesbackend.model;
+package com.hotelservicesbackend.entity;
 
-import com.hotelservicesbackend.model.enums.StatutNotification;
+import com.hotelservicesbackend.entity.enums.StatutNotification;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,11 +1,11 @@
 package com.hotelservicesbackend.controller;
 
 import com.hotelservicesbackend.dto.DemandeRequest;
-import com.hotelservicesbackend.model.Client;
-import com.hotelservicesbackend.model.Demande;
-import com.hotelservicesbackend.model.Service;
-import com.hotelservicesbackend.model.enums.PrioriteDemande;
-import com.hotelservicesbackend.model.enums.StatutDemande;
+import com.hotelservicesbackend.entity.Client;
+import com.hotelservicesbackend.entity.Demande;
+import com.hotelservicesbackend.entity.Service;
+import com.hotelservicesbackend.entity.enums.PrioriteDemande;
+import com.hotelservicesbackend.entity.enums.StatutDemande;
 import com.hotelservicesbackend.repository.ClientRepository;
 import com.hotelservicesbackend.repository.DemandeRepository;
 import com.hotelservicesbackend.repository.ServiceRepository;

@@ -1,6 +1,6 @@
 package com.hotelservicesbackend.controller;
 
-import com.hotelservicesbackend.model.Client;
+import com.hotelservicesbackend.entity.Client;
 import com.hotelservicesbackend.repository.ClientRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

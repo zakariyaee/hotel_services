@@ -1,7 +1,7 @@
 package com.hotelservicesbackend.repository;
 
-import com.hotelservicesbackend.model.Demande;
-import com.hotelservicesbackend.model.enums.StatutDemande;
+import com.hotelservicesbackend.entity.Demande;
+import com.hotelservicesbackend.entity.enums.StatutDemande;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -11,8 +11,8 @@ import { AuthService } from '../../../../core/services/auth.service';
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
-  username = 'client1';
-  password = 'client123';
+  email = '';
+  motDePasse = '';
   readonly errorMessage = signal('');
   readonly isLoading = signal(false);
 
@@ -21,7 +21,7 @@ export class LoginComponent {
   login(): void {
     this.errorMessage.set('');
     this.isLoading.set(true);
-    this.authService.login({ username: this.username, password: this.password }).subscribe({
+    this.authService.login({ email: this.email, motDePasse: this.motDePasse }).subscribe({
       next: user => {
         this.isLoading.set(false);
         this.router.navigate([this.routeForRole(user.role)]);

@@ -7,8 +7,8 @@
     <div class="brand"><span class="brand-mark">⌁</span> MAISON <strong>ÉLAN</strong></div>
     <span class="eyebrow">Bienvenue</span><h1>Accédez à votre espace</h1><p class="muted">Connectez-vous selon votre profil pour accéder à votre espace.</p>
     <form (ngSubmit)="login()">
-      <label class="field"><span>Identifiant</span><input [(ngModel)]="username" name="username" placeholder="Votre identifiant" required /></label>
-      <label class="field"><span>Mot de passe</span><input [(ngModel)]="password" name="password" type="password" placeholder="Votre mot de passe" required /></label>
+      <label class="field"><span>Email</span><input [(ngModel)]="email" name="email" type="email" placeholder="Votre email" required /></label>
+      <label class="field"><span>Mot de passe</span><input [(ngModel)]="motDePasse" name="motDePasse" type="password" placeholder="Votre mot de passe" required /></label>
       @if (errorMessage()) { <p class="error-message">{{ errorMessage() }}</p> }
       <button class="primary-button" type="submit" [disabled]="isLoading()">{{ isLoading() ? 'Connexion...' : 'Se connecter →' }}</button>
     </form>
