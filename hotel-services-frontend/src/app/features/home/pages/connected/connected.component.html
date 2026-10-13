@@ -7,6 +7,10 @@
     </div>
   </header>
   <main>
-    <app-demande-management></app-demande-management>
+    @if (currentUser()?.role === 'ADMIN') {
+      <app-admin-crud></app-admin-crud>
+    } @else {
+      <app-demande-management></app-demande-management>
+    }
   </main>
 </div>

@@ -1,0 +1,30 @@
+<section class="admin-crud">
+  <div class="page-intro"><span class="section-tag">ADMINISTRATION</span><h1>Gestion de l’hôtel</h1><p>CRUD des services et des départements.</p></div>
+  @if (message()) { <p class="feedback">{{ message() }}</p> }
+
+  <div class="crud-grid">
+    <article class="card">
+      <h2>{{ serviceId === null ? 'Ajouter un service' : 'Modifier le service' }}</h2>
+      <form (ngSubmit)="saveService()">
+        <input name="serviceNom" placeholder="Nom" [(ngModel)]="serviceForm.nom" required>
+        <textarea name="serviceDescription" placeholder="Description" [(ngModel)]="serviceForm.description"></textarea>
+        <input name="serviceDuree" type="number" min="1" placeholder="Durée (minutes)" [(ngModel)]="serviceForm.dureeEstimee">
+        <input name="serviceImage" placeholder="URL de l’image" [(ngModel)]="serviceForm.imageUrl">
+        <label><input name="serviceDisponibilite" type="checkbox" [(ngModel)]="serviceForm.disponibilite"> Disponible</label>
+        <div class="actions"><button type="submit">Enregistrer</button>@if (serviceId !== null) { <button type="button" class="secondary" (click)="cancelService()">Annuler</button> }</div>
+      </form>
+      <div class="list">@for (service of services(); track service.idService) { <div class="row"><span><strong>{{ service.nom }}</strong><small>{{ service.dureeEstimee }} min · {{ service.disponibilite ? 'Disponible' : 'Indisponible' }}</small></span><span class="actions"><button type="button" (click)="editService(service)">Modifier</button><button type="button" class="danger" (click)="deleteService(service.idService!)">Supprimer</button></span></div> }</div>
+    </article>
+
+    <article class="card">
+      <h2>{{ departementId === null ? 'Ajouter un département' : 'Modifier le département' }}</h2>
+      <form (ngSubmit)="saveDepartement()">
+        <input name="departementNom" placeholder="Nom" [(ngModel)]="departementForm.nom" required>
+        <textarea name="departementDescription" placeholder="Description" [(ngModel)]="departementForm.description"></textarea>
+        <input name="departementHoraires" placeholder="Horaires d’ouverture" [(ngModel)]="departementForm.horairesOuverture">
+        <div class="actions"><button type="submit">Enregistrer</button>@if (departementId !== null) { <button type="button" class="secondary" (click)="cancelDepartement()">Annuler</button> }</div>
+      </form>
+      <div class="list">@for (departement of departements(); track departement.idDepartement) { <div class="row"><span><strong>{{ departement.nom }}</strong><small>{{ departement.horairesOuverture || 'Horaires non définis' }}</small></span><span class="actions"><button type="button" (click)="editDepartement(departement)">Modifier</button><button type="button" class="danger" (click)="deleteDepartement(departement.idDepartement!)">Supprimer</button></span></div> }</div>
+    </article>
+  </div>
+</section>

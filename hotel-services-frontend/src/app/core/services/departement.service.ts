@@ -9,12 +9,8 @@ export class DepartementService {
   private readonly apiUrl = `${environment.apiUrl}/departements`;
 
   constructor(private http: HttpClient) {}
-
-  getAll(): Observable<Departement[]> {
-    return this.http.get<Departement[]>(this.apiUrl);
-  }
-
-  getById(id: number): Observable<Departement> {
-    return this.http.get<Departement>(`${this.apiUrl}/${id}`);
-  }
+  getAll(): Observable<Departement[]> { return this.http.get<Departement[]>(this.apiUrl); }
+  create(value: Partial<Departement>): Observable<Departement> { return this.http.post<Departement>(this.apiUrl, value); }
+  update(id: number, value: Partial<Departement>): Observable<Departement> { return this.http.put<Departement>(`${this.apiUrl}/${id}`, value); }
+  delete(id: number): Observable<void> { return this.http.delete<void>(`${this.apiUrl}/${id}`); }
 }

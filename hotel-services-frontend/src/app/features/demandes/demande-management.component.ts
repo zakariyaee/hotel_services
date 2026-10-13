@@ -6,6 +6,7 @@ import { DemandeService } from '../../core/services/demande.service';
 import { Service } from '../../core/models/service.model';
 import { Demande, CreateDemandeDto } from '../../core/models/demande.model';
 import { PrioriteDemande } from '../../core/models/enums.model';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-demande-management',
@@ -32,7 +33,8 @@ export class DemandeManagementComponent implements OnInit {
 
   constructor(
     private serviceService: HotelServiceService,
-    private demandeService: DemandeService
+    private demandeService: DemandeService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -43,7 +45,7 @@ export class DemandeManagementComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    this.serviceService.getAll().subscribe({
+    this.serviceService.getAvailable().subscribe({
       next: (services) => {
         this.services.set(services);
         if (services.length > 0 && !this.selectedServiceId) {
@@ -60,7 +62,11 @@ export class DemandeManagementComponent implements OnInit {
   }
 
   loadDemandes(): void {
-    this.demandeService.getAll().subscribe({
+    const user = this.authService.currentUser();
+    const demandes$ = user?.role === 'CLIENT'
+      ? this.demandeService.getByClient(user.idUtilisateur)
+      : this.demandeService.getAll();
+    demandes$.subscribe({
       next: (demandes) => {
         this.demandes.set(demandes);
         this.isLoading.set(false);
@@ -69,6 +75,25 @@ export class DemandeManagementComponent implements OnInit {
         console.error('Erreur chargement demandes', err);
         this.isLoading.set(false);
       },
+    });
+  }
+
+  isStaff(): boolean {
+    return this.authService.currentUser()?.role === 'STAFF';
+  }
+
+  updateStatus(id: number, statut: string): void {
+    this.demandeService.update(id, { statut: statut as any }).subscribe({
+      next: () => { this.successMessage.set('Statut de la demande mis à jour.'); this.loadDemandes(); },
+      error: () => this.errorMessage.set('Impossible de modifier le statut.'),
+    });
+  }
+
+  deleteDemande(id: number): void {
+    if (!confirm('Supprimer cette demande ?')) return;
+    this.demandeService.delete(id).subscribe({
+      next: () => { this.successMessage.set('Demande supprimée.'); this.loadDemandes(); },
+      error: () => this.errorMessage.set('Impossible de supprimer la demande.'),
     });
   }
 
@@ -96,6 +121,7 @@ export class DemandeManagementComponent implements OnInit {
 
     const dto: CreateDemandeDto = {
       serviceId: this.selectedServiceId,
+      clientId: this.authService.currentUser()?.idUtilisateur,
       priorite: this.selectedPriorite,
       tempsTraitementEstime: this.tempsTraitementEstime,
     };

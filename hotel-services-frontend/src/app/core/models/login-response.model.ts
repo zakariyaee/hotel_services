@@ -1,1 +1,1 @@
-export interface LoginResponse { email: string; role: string; }
+export interface LoginResponse { idUtilisateur: number; email: string; role: string; }

@@ -14,11 +14,23 @@ export class HotelServiceService {
     return this.http.get<Service[]>(this.apiUrl);
   }
 
+  getAvailable(): Observable<Service[]> {
+    return this.http.get<Service[]>(`${this.apiUrl}/disponibles`);
+  }
+
   getById(id: number): Observable<Service> {
     return this.http.get<Service>(`${this.apiUrl}/${id}`);
   }
 
   create(service: Partial<Service>): Observable<Service> {
     return this.http.post<Service>(this.apiUrl, service);
+  }
+
+  update(id: number, service: Partial<Service>): Observable<Service> {
+    return this.http.put<Service>(`${this.apiUrl}/${id}`, service);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

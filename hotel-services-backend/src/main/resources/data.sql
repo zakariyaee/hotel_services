@@ -2,12 +2,6 @@
 -- DONNEES DE TEST POUR HOTEL-SERVICES
 -- ========================================================
 
--- Utilisateurs pour l'authentification existante
-INSERT IGNORE INTO app_user (id, username, password, role) VALUES (1, '412', '123456', 'GUEST');
-INSERT IGNORE INTO app_user (id, username, password, role) VALUES (2, 'client1', 'client123', 'CLIENT');
-INSERT IGNORE INTO app_user (id, username, password, role) VALUES (3, 'staff1', 'staff123', 'STAFF');
-INSERT IGNORE INTO app_user (id, username, password, role) VALUES (4, 'admin', 'admin123', 'ADMIN');
-
 -- Departements
 INSERT IGNORE INTO departement (id_departement, nom, description, horaires_ouverture) VALUES
 (1, 'Restauration & Room Service', 'Service des repas, petits-déjeuners et boissons en chambre.', '24h/24 - 7j/7'),
@@ -38,7 +32,8 @@ INSERT IGNORE INTO utilisateur (id_utilisateur, nom, prenom, email, mot_de_passe
 (1, 'Allouch', 'Zakaria', 'zakaria@hotel.com', 'client123', '+33611223344', 'CLIENT'),
 (2, 'Dupont', 'Claire', 'claire.reception@hotel.com', 'staff123', '+33622334455', 'STAFF'),
 (3, 'Moreau', 'Lucas', 'lucas.agent@hotel.com', 'staff123', '+33633445566', 'STAFF'),
-(4, 'Benali', 'Yasmine', 'yasmine.agent@hotel.com', 'staff123', '+33644556677', 'STAFF');
+(4, 'Benali', 'Yasmine', 'yasmine.agent@hotel.com', 'staff123', '+33644556677', 'STAFF'),
+(5, 'Admin', 'Hotel', 'admin@hotel.com', 'admin123', '+33600000000', 'ADMIN');
 
 -- Client (id_utilisateur = 1)
 INSERT IGNORE INTO client (id_utilisateur, reservation_statut, langue_preferee, preference_notification) VALUES

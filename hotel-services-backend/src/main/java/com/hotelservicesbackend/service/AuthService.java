@@ -13,6 +13,6 @@ public class AuthService {
 
     public Optional<LoginResponse> login(LoginRequest request) {
         return userRepository.findByEmailAndMotDePasse(request.email(), request.motDePasse())
-                .map(user -> new LoginResponse(user.getEmail(), user.getRole().name()));
+                .map(user -> new LoginResponse(user.getIdUtilisateur(), user.getEmail(), user.getRole().name()));
     }
 }

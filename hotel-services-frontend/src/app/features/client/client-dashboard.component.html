@@ -1,0 +1,5 @@
+<div class="dashboard client-dashboard">
+  <header><div class="brand">ESPACE CLIENT</div><div class="account">{{ currentUser()?.email }} <button type="button" (click)="logout()">Déconnexion</button></div></header>
+  <section class="welcome"><span>VOTRE SÉJOUR</span><h1>Demander un service</h1><p>Consultez les services disponibles et suivez vos demandes.</p></section>
+  <app-demande-management></app-demande-management>
+</div>

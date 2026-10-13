@@ -192,6 +192,13 @@
                     </div>
                   }
                 </div>
+                @if (isStaff() && d.idDemande) {
+                  <div class="staff-actions">
+                    <button type="button" (click)="updateStatus(d.idDemande!, 'EN_COURS')">Prendre en charge</button>
+                    <button type="button" (click)="updateStatus(d.idDemande!, 'TERMINEE')">Marquer terminée</button>
+                    <button type="button" class="danger" (click)="deleteDemande(d.idDemande!)">Supprimer</button>
+                  </div>
+                }
               </div>
             </div>
           }
