@@ -1,0 +1,202 @@
+<div class="demande-container">
+  <!-- En-tête de bienvenue -->
+  <div class="page-intro">
+    <div>
+      <span class="section-tag">SERVICES INTRA-HÔTELIERS</span>
+      <h1 class="page-title">Digitalisation & Gestion des Demandes</h1>
+      <p class="page-subtitle">Sélectionnez un service en direct de la base de données pour générer et suivre vos demandes en temps réel.</p>
+    </div>
+    <button class="btn-refresh" (click)="loadData()" [disabled]="isLoading()">
+      <span>↻</span> Actualiser les données
+    </button>
+  </div>
+
+  <!-- Messages d'état -->
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      <span class="alert-icon">✓</span>
+      <div>{{ successMessage() }}</div>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="alert alert-danger">
+      <span class="alert-icon">⚠</span>
+      <div>{{ errorMessage() }}</div>
+    </div>
+  }
+
+  <div class="grid-layout">
+    <!-- COLONNE GAUCHE : Formulaire & Sélection de service -->
+    <div class="card form-card">
+      <div class="card-header">
+        <h2 class="card-title">Nouvelle Demande de Service</h2>
+        <span class="card-badge">Formulaire JPA</span>
+      </div>
+
+      <form (ngSubmit)="submitDemande()" class="service-form">
+        <!-- 1. Sélection du Service -->
+        <div class="form-group">
+          <label for="service-select">1. Choisissez un Service de l'Hôtel :</label>
+          <select
+            id="service-select"
+            class="form-control"
+            [ngModel]="selectedServiceId"
+            (ngModelChange)="onSelectService($event)"
+            name="selectedService"
+            required>
+            @for (srv of services(); track srv.idService) {
+              <option [value]="srv.idService">
+                {{ srv.nom }} ({{ srv.departement?.nom || 'Général' }} — ~{{ srv.dureeEstimee }} min)
+              </option>
+            }
+          </select>
+        </div>
+
+        <!-- Aperçu visuel du service sélectionné -->
+        @if (getSelectedService(); as srv) {
+          <div class="service-preview">
+            @if (srv.imageUrl) {
+              <img [src]="srv.imageUrl" [alt]="srv.nom" class="service-img" />
+            }
+            <div class="service-details">
+              <h3>{{ srv.nom }}</h3>
+              <p class="service-desc">{{ srv.description }}</p>
+              <div class="service-meta">
+                <span class="meta-tag">
+                  <strong>Département :</strong> {{ srv.departement?.nom || 'Général' }}
+                </span>
+                <span class="meta-tag">
+                  <strong>Durée estimée :</strong> {{ srv.dureeEstimee }} minutes
+                </span>
+                <span class="meta-tag" [class.available]="srv.disponibilite">
+                  {{ srv.disponibilite ? '● Disponible 24/7' : '○ Indisponible' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- 2. Priorité de la demande -->
+        <div class="form-group">
+          <label>2. Niveau de Priorité :</label>
+          <div class="priority-options">
+            @for (p of priorites; track p) {
+              <label class="priority-chip" [class.selected]="selectedPriorite === p">
+                <input
+                  type="radio"
+                  name="priorite"
+                  [value]="p"
+                  [(ngModel)]="selectedPriorite" />
+                <span>{{ p }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <!-- 3. Temps estimé ajusté -->
+        <div class="form-group">
+          <label for="temps-estime">3. Temps de traitement estimé (minutes) :</label>
+          <input
+            id="temps-estime"
+            type="number"
+            class="form-control"
+            [(ngModel)]="tempsTraitementEstime"
+            name="tempsTraitementEstime"
+            min="1" />
+        </div>
+
+        <!-- 4. Notes ou motif spécifique -->
+        <div class="form-group">
+          <label for="custom-notes">4. Précisions pour le personnel (optionnel) :</label>
+          <textarea
+            id="custom-notes"
+            class="form-control"
+            rows="2"
+            [(ngModel)]="customNotes"
+            name="customNotes"
+            placeholder="Ex : plateau à déposer sur la terrasse, serviettes supplémentaires..."></textarea>
+        </div>
+
+        <!-- Bouton d'action -->
+        <button
+          type="submit"
+          class="btn-submit"
+          [disabled]="isSubmitting() || !selectedServiceId">
+          @if (isSubmitting()) {
+            <span>Enregistrement dans MySQL...</span>
+          } @else {
+            <span>Transmettre la Demande au Personnel →</span>
+          }
+        </button>
+      </form>
+    </div>
+
+    <!-- COLONNE DROITE : Liste des Demandes Réelles -->
+    <div class="card list-card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Demandes Enregistrées en Base</h2>
+          <span class="card-subtitle">{{ demandes().length }} demande(s) persistée(s) dans MySQL</span>
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Chargement des données MySQL...</p>
+        </div>
+      } @else if (demandes().length === 0) {
+        <div class="empty-state">
+          <p>Aucune demande enregistrée pour l'instant.</p>
+          <small>Utilisez le formulaire à gauche pour soumettre une première demande.</small>
+        </div>
+      } @else {
+        <div class="demande-list">
+          @for (d of demandes(); track d.idDemande) {
+            <div class="demande-item">
+              <div class="demande-top">
+                <div class="ref-badge">{{ d.referenceDemande }}</div>
+                <div class="badges-group">
+                  <span class="badge" [ngClass]="getPrioriteClass(d.priorite)">
+                    {{ d.priorite }}
+                  </span>
+                  <span class="statut-badge" [ngClass]="getStatutClass(d.statut)">
+                    <i></i> {{ d.statut }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="demande-body">
+                <h4 class="service-nom">{{ d.service?.nom || 'Service Non Spécifié' }}</h4>
+                <div class="demande-info-grid">
+                  <div>
+                    <span class="info-label">Client :</span>
+                    <span class="info-val">{{ d.client?.nom }} {{ d.client?.prenom }} ({{ d.client?.email }})</span>
+                  </div>
+                  <div>
+                    <span class="info-label">Département :</span>
+                    <span class="info-val">{{ d.service?.departement?.nom || 'Service d\'étage' }}</span>
+                  </div>
+                  <div>
+                    <span class="info-label">Créée le :</span>
+                    <span class="info-val">{{ d.dateCreation | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                  <div>
+                    <span class="info-label">Délai estimé :</span>
+                    <span class="info-val">{{ d.tempsTraitementEstime }} minutes</span>
+                  </div>
+                  @if (d.receptionniste) {
+                    <div>
+                      <span class="info-label">Supervisée par :</span>
+                      <span class="info-val">{{ d.receptionniste.nom }} ({{ d.receptionniste.posteReception }})</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

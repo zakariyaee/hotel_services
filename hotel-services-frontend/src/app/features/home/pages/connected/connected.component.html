@@ -2,9 +2,11 @@
   <header class="connected-header">
     <div class="brand"><span class="brand-mark">⌁</span> MAISON <strong>ÉLAN</strong></div>
     <div class="connected-actions">
-      <span class="connected-status"><i></i> Connected · {{ currentUser()?.role }}</span>
-      <button class="avatar" type="button" (click)="logout()">{{ currentUser()?.username?.slice(0, 2)?.toUpperCase() }}</button>
+      <span class="connected-status"><i></i> Connecté · {{ currentUser()?.role || 'CLIENT' }}</span>
+      <button class="avatar" type="button" (click)="logout()">{{ currentUser()?.username?.slice(0, 2)?.toUpperCase() || 'CL' }}</button>
     </div>
   </header>
-  <main></main>
+  <main>
+    <app-demande-management></app-demande-management>
+  </main>
 </div>

@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { DemandeManagementComponent } from '../../../demandes/demande-management.component';
 
 @Component({
   selector: 'app-connected',
   standalone: true,
+  imports: [DemandeManagementComponent],
   templateUrl: './connected.component.html',
   styleUrl: './connected.component.scss',
 })
