@@ -1,5 +1,507 @@
-<div class="dashboard client-dashboard">
-  <header><div class="brand">ESPACE CLIENT</div><div class="account">{{ currentUser()?.email }} <button type="button" (click)="logout()">Déconnexion</button></div></header>
-  <section class="welcome"><span>VOTRE SÉJOUR</span><h1>Demander un service</h1><p>Consultez les services disponibles et suivez vos demandes.</p></section>
-  <app-demande-management></app-demande-management>
+<div class="client-portal">
+  <!-- HEADER -->
+  <header class="luxury-header">
+    <div class="header-inner">
+      <div class="brand" (click)="backToHub()">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="m8 12 2.5 2.5 5.5-6" />
+          </svg>
+        </span>
+        <span class="brand-name">MAISON <strong>ÉLAN</strong></span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Notification button -->
+        <div class="action-dropdown-wrap">
+          <button 
+            type="button" 
+            class="header-icon-btn" 
+            (click)="toggleNotifications()" 
+            aria-label="Notifications"
+            [class.active]="showNotifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            @if (demandes().length > 0) {
+              <span class="badge-dot"></span>
+            }
+          </button>
+
+          @if (showNotifications) {
+            <div class="dropdown-panel notif-panel">
+              <div class="panel-header">
+                <h4>Notifications de service</h4>
+                <span class="panel-count">{{ demandes().length }} mise(s) à jour</span>
+              </div>
+              <div class="panel-list">
+                @if (demandes().length === 0) {
+                  <div class="panel-empty">Aucune notification récente.</div>
+                } @else {
+                  @for (d of demandes(); track d.idDemande) {
+                    <div class="panel-item" (click)="openActiveDemandeModal({
+                      idDemande: d.idDemande,
+                      reference: d.referenceDemande || ('#' + d.idDemande),
+                      title: d.service?.nom || 'Demande',
+                      status: d.statut,
+                      statusLabel: getStatutLabel(d.statut),
+                      etaText: '~ ' + (d.tempsTraitementEstime || 15) + ' min',
+                      dateCreation: d.dateCreation
+                    })">
+                      <div class="item-status-icon">●</div>
+                      <div class="item-content">
+                        <strong>{{ d.referenceDemande || ('#' + d.idDemande) }} · {{ d.service?.nom }}</strong>
+                        <span>{{ getStatutLabel(d.statut) }}</span>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- User profile button -->
+        <div class="action-dropdown-wrap">
+          <button 
+            type="button" 
+            class="user-avatar-btn" 
+            (click)="toggleUserMenu()" 
+            [title]="userDisplayName">
+            {{ userInitials }}
+          </button>
+
+          @if (showUserMenu) {
+            <div class="dropdown-panel user-panel">
+              <div class="panel-user-header">
+                <strong>{{ userDisplayName }}</strong>
+                <small>{{ currentUser()?.email }}</small>
+                <div class="room-tag">Chambre 412 · Séjour VIP</div>
+              </div>
+              <div class="panel-divider"></div>
+              <button type="button" class="panel-action logout-action" (click)="logout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Déconnexion
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- TOAST NOTIFICATION -->
+  @if (toastMessage()) {
+    <div class="luxury-toast">
+      <div class="toast-content">
+        <span class="toast-check">✓</span>
+        <span>{{ toastMessage() }}</span>
+      </div>
+      <button class="toast-close" type="button" (click)="toastMessage.set('')">✕</button>
+    </div>
+  }
+
+  <!-- SCREEN 1 : HUB CLIENT -->
+  @if (currentView === 'hub') {
+    <div class="hub-container">
+      <!-- HERO BANNER -->
+      <section class="hero-banner">
+        <div class="hero-main-col">
+          <span class="hero-badge">CHAMBRE 412 · SÉJOUR JUSQU'AU 18 JUIN</span>
+          <h1 class="hero-title">Bonjour, {{ clientFirstName }}.</h1>
+          <p class="hero-sub">Que pouvons-nous faire pour vous aujourd'hui ?</p>
+        </div>
+        <div class="hero-weather-col">
+          <div class="weather-temp">24°</div>
+          <div class="weather-label">Paris · Ensoleillé</div>
+        </div>
+      </section>
+
+      <!-- SERVICES SECTION -->
+      <section class="services-block">
+        <div class="services-heading-bar">
+          <div>
+            <span class="section-kicker">SERVICES EN CHAMBRE</span>
+            <h2 class="section-title">Comment pouvons-nous vous aider ?</h2>
+          </div>
+          <div class="live-status-pill">
+            <span class="pulse-dot"></span>
+            <span>Équipe disponible</span>
+          </div>
+        </div>
+
+        <!-- 6 CARDS GRID -->
+        <div class="services-grid">
+          @for (card of serviceCards; track card.id) {
+            <article class="service-card" (click)="openServiceRequest(card)">
+              <div class="service-card-top">
+                <div class="card-icon-circle">
+                  @switch (card.icon) {
+                    @case ('utensils') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2" />
+                        <path d="M15 2v20" />
+                        <path d="M6 2v7a2 2 0 0 0 2 2 2 2 0 0 0 2-2V2" />
+                        <path d="M8 11v11" />
+                      </svg>
+                    }
+                    @case ('sparkles') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+                      </svg>
+                    }
+                    @case ('laundry') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="2" width="16" height="20" rx="3" />
+                        <circle cx="12" cy="13" r="5" />
+                        <path d="M8 6h.01" />
+                        <path d="M12 6h.01" />
+                      </svg>
+                    }
+                    @case ('wrench') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                      </svg>
+                    }
+                    @case ('bell') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                      </svg>
+                    }
+                    @case ('clock') {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                    }
+                  }
+                </div>
+                <div class="card-chevron">›</div>
+              </div>
+
+              <div class="service-card-content">
+                <h3 class="card-title">{{ card.title }}</h3>
+                <p class="card-subtitle">{{ card.subtitle }}</p>
+              </div>
+
+              <div class="service-card-meta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span>{{ card.estimate }}</span>
+              </div>
+            </article>
+          }
+        </div>
+
+        <!-- ACTIVE REQUEST BANNER (Demande en cours) -->
+        @if (activeDemandeDisplay; as act) {
+          <div class="active-demand-card" (click)="openActiveDemandeModal(act)">
+            <div class="demand-left-box">
+              <div class="demand-icon-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+              </div>
+              <div class="demand-info">
+                <span class="demand-sub">Demande en cours · {{ act.reference }}</span>
+                <strong class="demand-title">{{ act.title }}</strong>
+                <div class="demand-status-line">
+                  <span class="status-green-dot"></span>
+                  <span>{{ act.statusLabel }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="demand-right-box">
+              <span class="demand-eta">{{ act.etaText }}</span>
+              <span class="demand-arrow">›</span>
+            </div>
+          </div>
+        }
+      </section>
+    </div>
+  }
+
+  <!-- SCREEN 2 : SERVICE REQUEST FORM -->
+  @if (currentView === 'request-form' && selectedServiceCard) {
+    <div class="form-view-container">
+      <!-- Back button -->
+      <button type="button" class="back-nav-btn" (click)="backToHub()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+        <span>Retour aux services</span>
+      </button>
+
+      <!-- Service lead presentation -->
+      <div class="service-presentation-row">
+        <div class="presentation-icon-box">
+          @switch (selectedServiceCard.icon) {
+            @case ('sparkles') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" />
+              </svg>
+            }
+            @case ('utensils') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2" />
+                <path d="M15 2v20" />
+                <path d="M6 2v7a2 2 0 0 0 2 2 2 2 0 0 0 2-2V2" />
+                <path d="M8 11v11" />
+              </svg>
+            }
+            @case ('laundry') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <rect x="4" y="2" width="16" height="20" rx="3" />
+                <circle cx="12" cy="13" r="5" />
+              </svg>
+            }
+            @case ('wrench') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+              </svg>
+            }
+            @case ('bell') {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            }
+            @default {
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            }
+          }
+        </div>
+        <div class="presentation-text-box">
+          <span class="presentation-kicker">{{ selectedServiceCard.serviceCategory }}</span>
+          <h1 class="presentation-title">{{ selectedServiceCard.formTitle }}</h1>
+          <p class="presentation-desc">{{ selectedServiceCard.formDesc }}</p>
+        </div>
+      </div>
+
+      <!-- FORM CARD CONTAINER -->
+      <div class="request-form-card">
+        <!-- 1. QUAND SOUHAITEZ-VOUS NOTRE PASSAGE ? -->
+        <div class="form-section-block">
+          <h3 class="section-question">Quand souhaitez-vous notre passage ?</h3>
+          <div class="timing-selector-grid">
+            <!-- Option 1: Dès que possible -->
+            <div 
+              class="timing-card" 
+              [class.active]="selectedTiming === 'asap'" 
+              (click)="setTiming('asap')">
+              <div class="radio-dot-wrap">
+                <div class="radio-outer" [class.selected]="selectedTiming === 'asap'">
+                  <div class="radio-inner"></div>
+                </div>
+              </div>
+              <div class="timing-text-wrap">
+                <strong class="timing-name">Dès que possible</strong>
+                <span class="timing-detail">environ {{ selectedServiceCard.estimate }}</span>
+              </div>
+            </div>
+
+            <!-- Option 2: Dans 1 heure -->
+            <div 
+              class="timing-card" 
+              [class.active]="selectedTiming === '1h'" 
+              (click)="setTiming('1h')">
+              <div class="radio-dot-wrap">
+                <div class="radio-outer" [class.selected]="selectedTiming === '1h'">
+                  <div class="radio-inner"></div>
+                </div>
+              </div>
+              <div class="timing-text-wrap">
+                <strong class="timing-name">Dans 1 heure</strong>
+              </div>
+            </div>
+
+            <!-- Option 3: Choisir une heure -->
+            <div 
+              class="timing-card" 
+              [class.active]="selectedTiming === 'custom'" 
+              (click)="setTiming('custom')">
+              <div class="radio-dot-wrap">
+                <div class="radio-outer" [class.selected]="selectedTiming === 'custom'">
+                  <div class="radio-inner"></div>
+                </div>
+              </div>
+              <div class="timing-text-wrap">
+                <strong class="timing-name">Choisir une heure</strong>
+              </div>
+            </div>
+          </div>
+
+          @if (selectedTiming === 'custom') {
+            <div class="custom-time-picker-row">
+              <label for="timePicker">Précisez l'heure de passage :</label>
+              <input 
+                id="timePicker" 
+                type="time" 
+                class="time-input-field" 
+                [(ngModel)]="customSelectedTime" />
+            </div>
+          }
+        </div>
+
+        <!-- 2. DE QUOI AVEZ-VOUS BESOIN ? -->
+        <div class="form-section-block">
+          <h3 class="section-question">De quoi avez-vous besoin ?</h3>
+          <div class="needs-chips-row">
+            @for (need of selectedServiceCard.needs; track need) {
+              <button 
+                type="button" 
+                class="need-pill-btn" 
+                [class.checked]="isNeedSelected(need)"
+                (click)="toggleNeed(need)">
+                <span class="custom-checkbox-box" [class.checked]="isNeedSelected(need)">
+                  @if (isNeedSelected(need)) {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  }
+                </span>
+                <span class="pill-label">{{ need }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- 3. UNE PRECISION POUR NOTRE EQUIPE ? -->
+        <div class="form-section-block">
+          <div class="question-header-flex">
+            <h3 class="section-question" for="notesArea">Une précision pour notre équipe ?</h3>
+            <span class="optional-tag">Optionnel</span>
+          </div>
+          <textarea 
+            id="notesArea" 
+            class="notes-textarea" 
+            rows="3" 
+            [(ngModel)]="customNotes" 
+            [placeholder]="selectedServiceCard.placeholder"></textarea>
+        </div>
+
+        <!-- ESTIMATE BAR & SUBMIT BUTTON -->
+        <div class="form-bottom-actions">
+          <div class="passage-estimate-row">
+            <div class="est-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span>Passage estimé</span>
+            </div>
+            <div class="est-right">{{ currentEstimatedTimeText }}</div>
+          </div>
+
+          <button 
+            type="button" 
+            class="btn-send-demand" 
+            [disabled]="isSubmitting()"
+            (click)="submitDemand()">
+            @if (isSubmitting()) {
+              <span class="btn-spinner"></span>
+              <span>Envoi à la conciergerie...</span>
+            } @else {
+              <span>Envoyer la demande</span>
+              <span class="arrow-glyph">›</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- DEMANDE DETAIL MODAL -->
+  @if (showDemandDetailModal && selectedModalDemande) {
+    <div class="modal-backdrop" (click)="closeDemandModal()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <span class="modal-sub">Détails de la demande</span>
+            <h3 class="modal-title">{{ selectedModalDemande.reference }}</h3>
+          </div>
+          <button class="modal-close-btn" type="button" (click)="closeDemandModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="modal-summary-box">
+            <div class="modal-row">
+              <span class="row-label">Prestation :</span>
+              <strong class="row-val">{{ selectedModalDemande.title }}</strong>
+            </div>
+            <div class="modal-row">
+              <span class="row-label">Statut actuel :</span>
+              <span class="status-badge-inline">
+                <i></i> {{ selectedModalDemande.statusLabel }}
+              </span>
+            </div>
+            <div class="modal-row">
+              <span class="row-label">Délai estimé :</span>
+              <strong class="row-val">{{ selectedModalDemande.etaText }}</strong>
+            </div>
+            @if (selectedModalDemande.notes) {
+              <div class="modal-row notes-row">
+                <span class="row-label">Précisions :</span>
+                <p class="notes-text">{{ selectedModalDemande.notes }}</p>
+              </div>
+            }
+          </div>
+
+          <!-- Tracking steps -->
+          <div class="tracking-steps">
+            <div class="step-item step-completed">
+              <div class="step-bullet">✓</div>
+              <div class="step-text">
+                <strong>Demande enregistrée</strong>
+                <small>Transmise au système central</small>
+              </div>
+            </div>
+            <div class="step-item" [class.step-completed]="selectedModalDemande.status !== 'EN_ATTENTE'">
+              <div class="step-bullet">
+                {{ selectedModalDemande.status !== 'EN_ATTENTE' ? '✓' : '2' }}
+              </div>
+              <div class="step-text">
+                <strong>Prise en charge</strong>
+                <small>Personnel assigné</small>
+              </div>
+            </div>
+            <div class="step-item" [class.step-completed]="selectedModalDemande.status === 'EN_COURS' || selectedModalDemande.status === 'TERMINEE'">
+              <div class="step-bullet">
+                {{ (selectedModalDemande.status === 'EN_COURS' || selectedModalDemande.status === 'TERMINEE') ? '✓' : '3' }}
+              </div>
+              <div class="step-text">
+                <strong>En route</strong>
+                <small>Intervention en chambre</small>
+              </div>
+            </div>
+            <div class="step-item" [class.step-completed]="selectedModalDemande.status === 'TERMINEE'">
+              <div class="step-bullet">4</div>
+              <div class="step-text">
+                <strong>Terminée</strong>
+                <small>Clôture du service</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-close" (click)="closeDemandModal()">Fermer</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>
