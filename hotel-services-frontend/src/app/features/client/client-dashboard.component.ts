@@ -21,7 +21,7 @@ export interface ServiceCardDef {
   formDesc: string;
   needs: string[];
   placeholder: string;
-  backendId?: number;
+  backendId: number;
 }
 
 export interface ActiveDemandeDisplay {
@@ -33,6 +33,7 @@ export interface ActiveDemandeDisplay {
   etaText: string;
   dateCreation?: string;
   notes?: string;
+  priorite?: string;
 }
 
 @Component({
@@ -53,29 +54,23 @@ export class ClientDashboardComponent implements OnInit {
   isSubmitting = signal<boolean>(false);
   toastMessage = signal<string>('');
 
-  // Dropdown states
+  // Demandes status filter: 'ALL' | 'EN_COURS' | 'EN_ATTENTE' | 'TERMINEE'
+  activeStatusFilter: 'ALL' | 'EN_COURS' | 'EN_ATTENTE' | 'TERMINEE' = 'ALL';
+
+  // Dropdown & Modal states
   showUserMenu = false;
   showNotifications = false;
   showDemandDetailModal = false;
   selectedModalDemande: ActiveDemandeDisplay | null = null;
 
-  // Active demand displayed in Screen 1 footer card
-  activeDemandeDisplay: ActiveDemandeDisplay | null = {
-    reference: '#2041',
-    title: 'Serviettes supplémentaires',
-    status: 'EN_COURS',
-    statusLabel: 'En route vers votre chambre',
-    etaText: '~ 8 min',
-  };
-
-  // 6 Services Cards according to Maison Élan design
+  // 6 Services Cards according to Maison Élan design with static backendId mapping
   serviceCards: ServiceCardDef[] = [
     {
       id: 'room-service',
       title: 'Room service',
       subtitle: 'Carte disponible 24h/24',
       estimate: '25-35 min',
-      defaultMinutes: 30,
+      defaultMinutes: 35,
       icon: 'utensils',
       iconClass: 'icon-room',
       serviceCategory: 'SERVICE EN CHAMBRE',
@@ -83,6 +78,7 @@ export class ClientDashboardComponent implements OnInit {
       formDesc: 'Savourez nos plateaux gourmets préparés par le chef et servis en chambre.',
       needs: ['Menu Gourmet complet', 'Plateau dégustation', 'Boissons fraîches & Vins', 'Couverts supplémentaires'],
       placeholder: 'Ex. Cuisson à point, sans gluten, ajouter des serviettes...',
+      backendId: 1,
     },
     {
       id: 'menage',
@@ -97,6 +93,7 @@ export class ClientDashboardComponent implements OnInit {
       formDesc: 'Notre équipe prend soin de votre chambre selon vos préférences.',
       needs: ['Nettoyage complet', 'Faire le lit', 'Vider les poubelles', 'Réassort salle de bain'],
       placeholder: 'Ex. Merci de ne pas changer les draps...',
+      backendId: 3,
     },
     {
       id: 'blanchisserie',
@@ -111,6 +108,7 @@ export class ClientDashboardComponent implements OnInit {
       formDesc: 'Collecte en chambre et traitement soigné de vos vêtements et textiles.',
       needs: ['Nettoyage à sec', 'Repassage soigné', 'Lavage express', 'Pliage & Pressing délicat'],
       placeholder: 'Ex. Prendre soin de la doublure en soie du costume...',
+      backendId: 4,
     },
     {
       id: 'maintenance',
@@ -125,6 +123,7 @@ export class ClientDashboardComponent implements OnInit {
       formDesc: 'Intervention technique rapide pour tout équipement de votre chambre.',
       needs: ['Climatisation / Chauffage', 'Télévision & Wi-Fi', 'Plomberie & Eau chaude', 'Éclairage / Serrure'],
       placeholder: 'Ex. La télécommande ne répond plus, piles à changer...',
+      backendId: 7,
     },
     {
       id: 'conciergerie',
@@ -139,6 +138,7 @@ export class ClientDashboardComponent implements OnInit {
       formDesc: 'Conseils personnalisés, réservations exclusives et transports privés.',
       needs: ['Réservation restaurant', 'Navette aéroport / Taxi', 'Billetterie spectacle & musée', 'Bagages & Gardiennage'],
       placeholder: 'Ex. Table pour 2 personnes près du Louvre ce soir vers 20h30...',
+      backendId: 5,
     },
     {
       id: 'reveil',
@@ -153,6 +153,7 @@ export class ClientDashboardComponent implements OnInit {
       formDesc: 'Notre réceptionniste vous appelle personnellement à l\'heure convenue.',
       needs: ['Appel téléphonique personnalisé', 'Café expresso en chambre', 'Point météo & vols', 'Rappel 15 min après'],
       placeholder: 'Ex. Merci de sonner fermement ou de rappeler en cas de non-réponse...',
+      backendId: 6,
     },
   ];
 
@@ -184,7 +185,7 @@ export class ClientDashboardComponent implements OnInit {
       const name = email.split('@')[0];
       return name.charAt(0).toUpperCase() + name.slice(1);
     }
-    return 'Camille';
+    return 'Zakaria';
   }
 
   get clientFirstName(): string {
@@ -219,10 +220,41 @@ export class ClientDashboardComponent implements OnInit {
     return `À ${this.customSelectedTime || 'l\'heure choisie'}`;
   }
 
+  // Demandes filtering & stats
+  get filteredDemandes(): Demande[] {
+    const list = this.demandes();
+    if (this.activeStatusFilter === 'EN_COURS') {
+      return list.filter((d) => d.statut === 'EN_COURS' || d.statut === 'PRISE_EN_CHARGE');
+    }
+    if (this.activeStatusFilter === 'EN_ATTENTE') {
+      return list.filter((d) => d.statut === 'EN_ATTENTE');
+    }
+    if (this.activeStatusFilter === 'TERMINEE') {
+      return list.filter((d) => d.statut === 'TERMINEE');
+    }
+    return list;
+  }
+
+  get countEnCours(): number {
+    return this.demandes().filter((d) => d.statut === 'EN_COURS' || d.statut === 'PRISE_EN_CHARGE').length;
+  }
+
+  get countEnAttente(): number {
+    return this.demandes().filter((d) => d.statut === 'EN_ATTENTE').length;
+  }
+
+  get countTerminees(): number {
+    return this.demandes().filter((d) => d.statut === 'TERMINEE').length;
+  }
+
+  setStatusFilter(filter: 'ALL' | 'EN_COURS' | 'EN_ATTENTE' | 'TERMINEE'): void {
+    this.activeStatusFilter = filter;
+  }
+
   loadBackendData(): void {
     this.isLoading.set(true);
 
-    // 1. Fetch hotel services and map to cards
+    // 1. Fetch hotel services and synchronize with cards
     this.serviceService.getAll().subscribe({
       next: (svcs) => {
         this.services.set(svcs);
@@ -231,7 +263,7 @@ export class ClientDashboardComponent implements OnInit {
       error: (err) => console.warn('Could not load services from backend', err),
     });
 
-    // 2. Fetch demandes for this client
+    // 2. Fetch all demandes for this client
     this.refreshDemandes();
   }
 
@@ -241,25 +273,10 @@ export class ClientDashboardComponent implements OnInit {
 
     this.demandeService.getByClient(clientId).subscribe({
       next: (demandesList) => {
-        this.demandes.set(demandesList);
+        // Sort descending by id or date so latest is first
+        const sorted = [...demandesList].sort((a, b) => (b.idDemande || 0) - (a.idDemande || 0));
+        this.demandes.set(sorted);
         this.isLoading.set(false);
-
-        // Find the most recent active demande
-        const active = demandesList.find(
-          (d) => d.statut === 'EN_COURS' || d.statut === 'PRISE_EN_CHARGE' || d.statut === 'EN_ATTENTE'
-        ) || demandesList[0];
-
-        if (active) {
-          this.activeDemandeDisplay = {
-            idDemande: active.idDemande,
-            reference: active.referenceDemande || `#${active.idDemande}`,
-            title: active.service?.nom || 'Demande de service',
-            status: active.statut,
-            statusLabel: this.getStatutLabel(active.statut),
-            etaText: active.tempsTraitementEstime ? `~ ${active.tempsTraitementEstime} min` : '~ 15 min',
-            dateCreation: active.dateCreation,
-          };
-        }
       },
       error: (err) => {
         console.warn('Could not load client demandes', err);
@@ -274,7 +291,7 @@ export class ClientDashboardComponent implements OnInit {
       if (card.id === 'room-service') {
         match = svcs.find((s) => s.nom.toLowerCase().includes('room') || s.idService === 1);
       } else if (card.id === 'menage') {
-        match = svcs.find((s) => s.nom.toLowerCase().includes('ménage') || s.idService === 3);
+        match = svcs.find((s) => s.nom.toLowerCase().includes('nage') || s.nom.toLowerCase().includes('ménage') || s.idService === 3);
       } else if (card.id === 'blanchisserie') {
         match = svcs.find((s) => s.nom.toLowerCase().includes('blanchisserie') || s.idService === 4);
       } else if (card.id === 'maintenance') {
@@ -282,7 +299,7 @@ export class ClientDashboardComponent implements OnInit {
       } else if (card.id === 'conciergerie') {
         match = svcs.find((s) => s.nom.toLowerCase().includes('navette') || s.nom.toLowerCase().includes('concierge') || s.idService === 5);
       } else if (card.id === 'reveil') {
-        match = svcs.find((s) => s.nom.toLowerCase().includes('réveil') || s.idService === 6);
+        match = svcs.find((s) => s.nom.toLowerCase().includes('veil') || s.nom.toLowerCase().includes('réveil') || s.idService === 6);
       }
 
       if (match && match.idService) {
@@ -297,7 +314,7 @@ export class ClientDashboardComponent implements OnInit {
     this.selectedTiming = 'asap';
     this.customNotes = '';
 
-    // Pre-select default options for Ménage (matching screenshot 2)
+    // Pre-select default options for Ménage (matching screenshot)
     if (card.id === 'menage') {
       this.selectedNeeds = ['Nettoyage complet', 'Faire le lit'];
     } else {
@@ -330,14 +347,14 @@ export class ClientDashboardComponent implements OnInit {
     }
   }
 
-  // Submit Demande
+  // Submit Demande and store into MySQL database
   submitDemand(): void {
     if (!this.selectedServiceCard) return;
 
     this.isSubmitting.set(true);
 
-    const refNum = Math.floor(2000 + Math.random() * 8000);
-    const reference = `#${refNum}`;
+    const refNum = Math.floor(1000 + Math.random() * 9000);
+    const reference = `DEM-${new Date().getFullYear()}-${refNum}`;
     const clientId = this.currentUser()?.idUtilisateur || 1;
     const serviceId = this.selectedServiceCard.backendId || 1;
 
@@ -355,51 +372,37 @@ export class ClientDashboardComponent implements OnInit {
     this.demandeService.create(dto).subscribe({
       next: (created) => {
         this.isSubmitting.set(false);
-
-        // Update active demand banner immediately
-        const titleDetails = this.selectedNeeds.length > 0
-          ? this.selectedNeeds.join(', ')
-          : this.selectedServiceCard!.title;
-
-        this.activeDemandeDisplay = {
-          idDemande: created.idDemande,
-          reference: created.referenceDemande || reference,
-          title: titleDetails,
-          status: created.statut || 'EN_ATTENTE',
-          statusLabel: 'En attente de prise en charge',
-          etaText: `~ ${delayMinutes} min`,
-          notes: this.customNotes,
-        };
-
-        this.toastMessage.set(`Votre demande ${reference} a bien été transmise à notre équipe !`);
+        this.toastMessage.set(`Votre demande ${created.referenceDemande || reference} a bien été enregistrée dans la base de données !`);
         this.currentView = 'hub';
+        this.activeStatusFilter = 'ALL';
         this.refreshDemandes();
-
         setTimeout(() => this.toastMessage.set(''), 6000);
       },
       error: (err) => {
         console.error('Erreur lors de la création de la demande', err);
         this.isSubmitting.set(false);
-
-        // Fallback local update so the UI still displays the requested demand
-        const titleDetails = this.selectedNeeds.length > 0
-          ? this.selectedNeeds.join(', ')
-          : this.selectedServiceCard!.title;
-
-        this.activeDemandeDisplay = {
-          reference: reference,
-          title: titleDetails,
-          status: 'EN_ATTENTE',
-          statusLabel: 'En attente de prise en charge',
-          etaText: `~ ${delayMinutes} min`,
-          notes: this.customNotes,
-        };
-
-        this.toastMessage.set(`Demande ${reference} enregistrée avec succès.`);
-        this.currentView = 'hub';
+        this.toastMessage.set(`Échec de l'enregistrement: ${err.error?.message || err.message || 'Erreur serveur'}`);
         setTimeout(() => this.toastMessage.set(''), 6000);
       },
     });
+  }
+
+  // Labels & status helpers
+  getStatusTag(statut?: string): string {
+    switch (statut) {
+      case 'EN_COURS':
+        return 'Demande en cours';
+      case 'PRISE_EN_CHARGE':
+        return 'Demande prise en charge';
+      case 'EN_ATTENTE':
+        return 'Demande en attente';
+      case 'TERMINEE':
+        return 'Demande terminée';
+      case 'ANNULEE':
+        return 'Demande annulée';
+      default:
+        return 'Demande enregistrée';
+    }
   }
 
   getStatutLabel(statut?: string): string {
@@ -415,8 +418,34 @@ export class ClientDashboardComponent implements OnInit {
       case 'REJETEE':
         return 'Non réalisable';
       default:
-        return 'En attente de confirmation';
+        return 'En attente de prise en charge';
     }
+  }
+
+  getStatutDotClass(statut?: string): string {
+    switch (statut) {
+      case 'EN_COURS':
+        return 'dot-encours';
+      case 'PRISE_EN_CHARGE':
+        return 'dot-prise';
+      case 'TERMINEE':
+        return 'dot-terminee';
+      case 'ANNULEE':
+      case 'REJETEE':
+        return 'dot-annulee';
+      default:
+        return 'dot-attente';
+    }
+  }
+
+  getServiceBadgeColor(serviceName?: string): string {
+    const s = (serviceName || '').toLowerCase();
+    if (s.includes('room') || s.includes('repas') || s.includes('petit')) return 'badge-food';
+    if (s.includes('nage') || s.includes('ménage') || s.includes('linge')) return 'badge-housekeeping';
+    if (s.includes('blanchisserie')) return 'badge-laundry';
+    if (s.includes('technique') || s.includes('maintenance')) return 'badge-tech';
+    if (s.includes('concierge') || s.includes('navette')) return 'badge-concierge';
+    return 'badge-default';
   }
 
   // Modals & Menu
@@ -430,8 +459,17 @@ export class ClientDashboardComponent implements OnInit {
     this.showUserMenu = false;
   }
 
-  openActiveDemandeModal(demand: ActiveDemandeDisplay): void {
-    this.selectedModalDemande = demand;
+  openDemandeDetail(d: Demande): void {
+    this.selectedModalDemande = {
+      idDemande: d.idDemande,
+      reference: d.referenceDemande || `#${d.idDemande}`,
+      title: d.service?.nom || 'Demande de service',
+      status: d.statut,
+      statusLabel: this.getStatutLabel(d.statut),
+      etaText: `~ ${d.tempsTraitementEstime || 20} min`,
+      dateCreation: d.dateCreation,
+      priorite: d.priorite,
+    };
     this.showDemandDetailModal = true;
   }
 
