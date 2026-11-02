@@ -1,0 +1,226 @@
+<div class="staff-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-stars">★★★★★</span>
+      <span class="brand-name">Intra-Hôtel</span>
+    </div>
+    <div class="sidebar-profile">
+      <div class="avatar">{{ currentUser?.email?.slice(0,2)?.toUpperCase() || 'SV' }}</div>
+      <div class="profile-info">
+        <strong>{{ currentUser?.email?.split('@')?.[0] || '' }}</strong>
+        <span class="role-badge personnel">Superviseur</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item" [class.active]="activeTab === 'tasks'" (click)="activeTab = 'tasks'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Tâches Département
+        @if (pendingSupervisionCount > 0) { <span class="nav-badge">{{ pendingSupervisionCount }}</span> }
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'team'" (click)="activeTab = 'team'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Mon Équipe
+        <span class="nav-badge team">{{ team().length }}</span>
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'alerts'" (click)="activeTab = 'alerts'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Alertes SLA
+        @if (alerts().length > 0) { <span class="nav-badge urgent">{{ alerts().length }}</span> }
+      </button>
+    </nav>
+    <button class="logout-btn" (click)="logout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Déconnexion
+    </button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-area">
+    @if (toastMsg()) {
+      <div class="toast" [class.toast-error]="toastError()">{{ toastMsg() }}</div>
+    }
+
+    <!-- Stats bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <span class="stat-num">{{ departmentTasks().length }}</span>
+        <span class="stat-label">Total département</span>
+      </div>
+      <div class="stat-card stat-warn">
+        <span class="stat-num">{{ pendingSupervisionCount }}</span>
+        <span class="stat-label">À affecter</span>
+      </div>
+      <div class="stat-card stat-alert">
+        <span class="stat-num">{{ alerts().length }}</span>
+        <span class="stat-label">Alertes retard</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">{{ team().length }}</span>
+        <span class="stat-label">Membres équipe</span>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state"><div class="spinner"></div><p>Chargement...</p></div>
+    }
+
+    <!-- TÂCHES DÉPARTEMENT -->
+    @if (activeTab === 'tasks' && !isLoading()) {
+      <section class="task-section">
+        <div class="section-header">
+          <div>
+            <h2>Tâches de Mon Département</h2>
+            <p class="section-desc">Affectez les tâches supervisées aux employés disponibles. Les tâches simples sont prises en charge directement par les agents.</p>
+          </div>
+          <button class="btn-refresh" (click)="loadAll()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Actualiser
+          </button>
+        </div>
+        @if (departmentTasks().length === 0) {
+          <div class="empty-state"><div class="empty-icon">✅</div><h3>Aucune tâche en cours dans votre département</h3></div>
+        } @else {
+          <div class="task-list">
+            @for (task of departmentTasks(); track task.idDemande) {
+              <div class="task-card" [class.task-late]="task.enRetard" [class.needs-assign]="task.necessiteSupervision && !task.idEmployeAssigne && task.statut === 'EN_ATTENTE'">
+                <div class="task-header">
+                  <div class="task-ref">{{ task.referenceDemande }}</div>
+                  <div class="task-badges">
+                    @if (task.necessiteSupervision) {
+                      <span class="badge-supervision">🎯 Supervision requise</span>
+                    }
+                    <span class="task-status" [class]="'status-' + task.statut">{{ statusLabel(task.statut) }}</span>
+                  </div>
+                </div>
+                <div class="task-service">
+                  <strong>{{ task.serviceNom }}</strong>
+                  <span class="task-dept">{{ task.departementNom }}</span>
+                </div>
+                <div class="task-client">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {{ task.clientPrenom }} {{ task.clientNom }} · Chambre <strong>{{ task.numChambre }}</strong>
+                </div>
+                @if (task.nomEmployeAssigne) {
+                  <div class="task-assignee">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Affecté à : <strong>{{ task.nomEmployeAssigne }}</strong> ({{ task.posteEmployeAssigne }})
+                  </div>
+                }
+                <div class="task-footer">
+                  <span class="task-time">⏱ {{ task.tempsTraitementEstime }} min</span>
+                  <span class="priority-badge" [class]="priorityClass(task.priorite)">{{ task.priorite }}</span>
+                  @if (task.enRetard) { <span class="late-badge">⚠ +{{ task.retardMinutes }} min</span> }
+                  @if (task.necessiteSupervision && task.statut === 'EN_ATTENTE') {
+                    <button class="btn-assign" (click)="openAssignModal(task)">Affecter un employé →</button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- MON ÉQUIPE -->
+    @if (activeTab === 'team' && !isLoading()) {
+      <section class="task-section">
+        <div class="section-header">
+          <h2>Mon Équipe ({{ team().length }} membres)</h2>
+        </div>
+        <div class="team-grid">
+          @for (member of team(); track member.idUtilisateur) {
+            <div class="member-card" [class.member-available]="member.disponible" [class.member-busy]="!member.disponible">
+              <div class="member-avatar">{{ (member.prenom.slice(0,1) || '') + (member.nom.slice(0,1) || '') }}</div>
+              <div class="member-info">
+                <strong>{{ member.prenom }} {{ member.nom }}</strong>
+                <span class="member-poste">{{ member.poste }}</span>
+                <span class="member-tasks">
+                  @if (member.disponible) { <span class="avail-dot">●</span> Disponible }
+                  @else { <span class="busy-dot">●</span> {{ member.nbTachesEnCours }} tâche(s) en cours }
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- ALERTES SLA -->
+    @if (activeTab === 'alerts' && !isLoading()) {
+      <section class="task-section">
+        <div class="section-header">
+          <h2>Alertes Retard (SLA)</h2>
+          <p class="section-desc">Demandes dépassant leur durée estimée de traitement.</p>
+        </div>
+        @if (alerts().length === 0) {
+          <div class="empty-state"><div class="empty-icon">🟢</div><h3>Aucune alerte en ce moment</h3><p>Toutes les tâches sont dans les délais. Excellent travail !</p></div>
+        } @else {
+          <div class="task-list">
+            @for (task of alerts(); track task.idDemande) {
+              <div class="task-card task-late">
+                <div class="task-header">
+                  <div class="task-ref">{{ task.referenceDemande }}</div>
+                  <span class="late-badge large">⚠ +{{ task.retardMinutes }} min de retard</span>
+                </div>
+                <div class="task-service"><strong>{{ task.serviceNom }}</strong></div>
+                <div class="task-client">
+                  Chambre <strong>{{ task.numChambre }}</strong> · {{ task.clientPrenom }} {{ task.clientNom }}
+                </div>
+                <div class="task-footer">
+                  @if (task.nomEmployeAssigne) {
+                    <span style="font-size:13px; color:#4b5853;">Assigné à : <strong>{{ task.nomEmployeAssigne }}</strong></span>
+                  } @else {
+                    <span style="font-size:13px; color:#c0392b;">⚠ Non assigné</span>
+                    @if (task.necessiteSupervision) {
+                      <button class="btn-assign" (click)="openAssignModal(task)">Affecter maintenant →</button>
+                    }
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  </main>
+</div>
+
+<!-- MODAL D'ASSIGNATION -->
+@if (showAssignModal && selectedTask) {
+  <div class="modal-backdrop" (click)="closeAssignModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>Affecter un employé</h3>
+          <p>{{ selectedTask.serviceNom }} · Chambre {{ selectedTask.numChambre }}</p>
+        </div>
+        <button class="close-btn" (click)="closeAssignModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="assign-label">Sélectionnez un membre de votre équipe :</p>
+        <div class="team-select-list">
+          @for (member of team(); track member.idUtilisateur) {
+            <label class="team-select-item" [class.selected]="selectedEmployeId === member.idUtilisateur" (click)="selectedEmployeId = member.idUtilisateur">
+              <input type="radio" name="assignee" [value]="member.idUtilisateur" [(ngModel)]="selectedEmployeId">
+              <div class="member-avatar sm">{{ (member.prenom.slice(0,1) || '') + (member.nom.slice(0,1) || '') }}</div>
+              <div class="member-select-info">
+                <strong>{{ member.prenom }} {{ member.nom }}</strong>
+                <span>{{ member.poste }}</span>
+                @if (member.disponible) {
+                  <span class="avail-tag">Disponible</span>
+                } @else {
+                  <span class="busy-tag">{{ member.nbTachesEnCours }} tâche(s)</span>
+                }
+              </div>
+            </label>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeAssignModal()">Annuler</button>
+        <button class="btn-primary" [disabled]="!selectedEmployeId" (click)="confirmAssign()">Confirmer l'affectation</button>
+      </div>
+    </div>
+  </div>
+}

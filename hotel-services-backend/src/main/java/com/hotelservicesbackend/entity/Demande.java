@@ -71,6 +71,13 @@ public class Demande {
     @JoinColumn(name = "idReceptionniste")
     private Receptionniste receptionniste;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idEmployeAssigne")
+    private Employe employeAssigne;
+
+    @Column(columnDefinition = "TEXT")
+    private String commentairesClient;
+
     @OneToMany(mappedBy = "demande", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Affectation> affectations = new ArrayList<>();

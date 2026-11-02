@@ -44,6 +44,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Routes publiques
                 .requestMatchers("/api/auth/**").permitAll()
+                // Routes réservées au personnel / superviseur
+                .requestMatchers("/api/staff/personnel/**").hasAnyRole("PERSONNEL", "ADMIN")
+                // Routes réservées au réceptionniste
+                .requestMatchers("/api/staff/reception/**").hasAnyRole("RECEPTIONNISTE", "ADMIN")
+                // Routes réservées à l'employé de terrain
+                .requestMatchers("/api/staff/employe/**").hasAnyRole("EMPLOYE", "STAFF", "ADMIN")
+                // Autres routes staff
+                .requestMatchers("/api/staff/**").hasAnyRole("EMPLOYE", "PERSONNEL", "RECEPTIONNISTE", "STAFF", "ADMIN")
                 // Routes réservées à l'admin
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/services").hasRole("ADMIN")

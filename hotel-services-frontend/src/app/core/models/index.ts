@@ -15,3 +15,5 @@ export * from './login-response.model';
 export * from './guest-access-request.model';
 export * from './guest-access-response.model';
 export * from './admin-reservation.model';
+export * from './staff.model';
+export * from './admin-utilisateur.model';

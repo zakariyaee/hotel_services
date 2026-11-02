@@ -30,7 +30,9 @@ public class UtilisateurService {
         Role role = request.role() == null ? Role.CLIENT : request.role();
         Utilisateur utilisateur = switch (role) {
             case CLIENT -> new Client();
-            case STAFF -> new Employe();
+            case RECEPTIONNISTE -> new com.hotelservicesbackend.entity.Receptionniste();
+            case PERSONNEL -> new com.hotelservicesbackend.entity.Personnel();
+            case EMPLOYE, STAFF -> new Employe();
             case ADMIN -> new Utilisateur();
         };
 

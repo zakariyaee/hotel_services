@@ -5,6 +5,7 @@ import com.hotelservicesbackend.entity.enums.StatutDemande;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +15,9 @@ public interface DemandeRepository extends JpaRepository<Demande, Long> {
     List<Demande> findByClient_IdUtilisateur(Long idClient);
     List<Demande> findByService_IdService(Long idService);
     List<Demande> findByStatut(StatutDemande statut);
+
+    List<Demande> findByEmployeAssigne_IdUtilisateur(Long idEmploye);
+    List<Demande> findByService_Departement_IdDepartement(Long idDepartement);
+    List<Demande> findByService_Departement_IdDepartementAndEmployeAssigneIsNullAndService_NecessiteSupervisionFalse(Long idDepartement);
+    long countByEmployeAssigne_IdUtilisateurAndStatutIn(Long idEmploye, Collection<StatutDemande> statuts);
 }

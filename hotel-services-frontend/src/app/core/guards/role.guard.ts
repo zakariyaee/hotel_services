@@ -3,10 +3,10 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 /**
- * Guard qui vérifie un rôle précis.
- * Usage: canActivate: [roleGuard('ADMIN')]
+ * Guard qui vérifie un ou plusieurs rôles autorisés.
+ * Usage: canActivate: [roleGuard('ADMIN')] ou canActivate: [roleGuard(['EMPLOYE', 'ADMIN'])]
  */
-export const roleGuard = (requiredRole: string): CanActivateFn => {
+export const roleGuard = (requiredRoles: string | string[]): CanActivateFn => {
   return (_route, _state) => {
     const authService = inject(AuthService);
     const router = inject(Router);
@@ -16,20 +16,27 @@ export const roleGuard = (requiredRole: string): CanActivateFn => {
       return false;
     }
 
-    const role = authService.getRole();
-    if (role?.toUpperCase() === requiredRole.toUpperCase()) {
+    const currentRole = (authService.getRole() || '').toUpperCase();
+    const rolesArray = Array.isArray(requiredRoles)
+      ? requiredRoles.map(r => r.toUpperCase())
+      : [requiredRoles.toUpperCase()];
+
+    if (rolesArray.includes(currentRole) || currentRole === 'ADMIN') {
       return true;
     }
 
-    // Redirige vers le dashboard approprié si le rôle ne correspond pas
+    // Redirige vers la page appropriée si le rôle ne correspond pas
     const roleRoutes: Record<string, string> = {
       CLIENT: '/client',
-      STAFF: '/staff',
+      EMPLOYE: '/staff/employe',
+      PERSONNEL: '/staff/personnel',
+      RECEPTIONNISTE: '/staff/reception',
+      STAFF: '/staff/employe',
       ADMIN: '/admin',
     };
-    const redirect = roleRoutes[role?.toUpperCase() ?? ''] ?? '/login';
+
+    const redirect = roleRoutes[currentRole] ?? '/login';
     router.navigate([redirect]);
     return false;
   };
 };
-

@@ -1,0 +1,167 @@
+<div class="staff-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-stars">★★★★★</span>
+      <span class="brand-name">Intra-Hôtel</span>
+    </div>
+    <div class="sidebar-profile">
+      <div class="avatar">{{ currentUser?.email?.slice(0,2)?.toUpperCase() || 'EMP' }}</div>
+      <div class="profile-info">
+        <strong>{{ currentUser?.email?.split('@')?.[0] || '' }}</strong>
+        <span class="role-badge employe">Employé de terrain</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item" [class.active]="activeTab === 'my'" (click)="activeTab = 'my'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Mes Tâches
+        @if (activeCount > 0) { <span class="nav-badge">{{ activeCount }}</span> }
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'pool'" (click)="activeTab = 'pool'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Tâches Disponibles
+        @if (poolTasks().length > 0) { <span class="nav-badge pool">{{ poolTasks().length }}</span> }
+      </button>
+    </nav>
+    <button class="logout-btn" (click)="logout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Déconnexion
+    </button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-area">
+    <!-- Toast -->
+    @if (toastMsg()) {
+      <div class="toast" [class.toast-error]="toastError()">{{ toastMsg() }}</div>
+    }
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <span class="stat-num">{{ activeCount }}</span>
+        <span class="stat-label">Tâches en cours</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">{{ completedCount }}</span>
+        <span class="stat-label">Terminées aujourd'hui</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">{{ poolTasks().length }}</span>
+        <span class="stat-label">Disponibles à prendre</span>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Chargement des tâches...</p>
+      </div>
+    }
+
+    <!-- MES TÂCHES -->
+    @if (activeTab === 'my' && !isLoading()) {
+      <section class="task-section">
+        <div class="section-header">
+          <h2>Mes Tâches Assignées</h2>
+          <button class="btn-refresh" (click)="loadAll()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Actualiser
+          </button>
+        </div>
+
+        @if (myTasks().length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>Aucune tâche assignée</h3>
+            <p>Consultez les tâches disponibles pour en prendre en charge une.</p>
+            <button class="btn-primary" (click)="activeTab = 'pool'">Voir les tâches disponibles</button>
+          </div>
+        } @else {
+          <div class="task-list">
+            @for (task of myTasks(); track task.idDemande) {
+              <div class="task-card" [class.task-late]="task.enRetard" [class.task-done]="task.statut === 'TERMINEE'">
+                <div class="task-header">
+                  <div class="task-ref">{{ task.referenceDemande }}</div>
+                  <span class="task-status" [class]="'status-' + task.statut">{{ statusLabel(task.statut) }}</span>
+                </div>
+                <div class="task-service">
+                  <strong>{{ task.serviceNom }}</strong>
+                  <span class="task-dept">{{ task.departementNom }}</span>
+                </div>
+                <div class="task-client">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {{ task.clientPrenom }} {{ task.clientNom }} · Chambre <strong>{{ task.numChambre }}</strong>
+                </div>
+                @if (task.commentairesClient) {
+                  <p class="task-note">💬 {{ task.commentairesClient }}</p>
+                }
+                <div class="task-footer">
+                  <span class="task-time">⏱ {{ task.tempsTraitementEstime }} min estimées</span>
+                  <span class="priority-badge" [class]="priorityClass(task.priorite)">{{ task.priorite }}</span>
+                  @if (task.enRetard) {
+                    <span class="late-badge">⚠ +{{ task.retardMinutes }} min retard</span>
+                  }
+                  @if (task.statut === 'EN_COURS' || task.statut === 'PRISE_EN_CHARGE') {
+                    <button class="btn-complete" (click)="completeTask(task.idDemande)">✓ Terminer</button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- POOL DISPONIBLE -->
+    @if (activeTab === 'pool' && !isLoading()) {
+      <section class="task-section">
+        <div class="section-header">
+          <h2>Tâches Disponibles</h2>
+          <p class="section-desc">Services simples (sans supervision requise) de votre département, non encore pris en charge.</p>
+          <button class="btn-refresh" (click)="loadAll()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Actualiser
+          </button>
+        </div>
+
+        @if (poolTasks().length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <h3>Aucune tâche en attente</h3>
+            <p>Toutes les demandes de votre département ont déjà été prises en charge. Excellent travail d'équipe !</p>
+          </div>
+        } @else {
+          <div class="task-list">
+            @for (task of poolTasks(); track task.idDemande) {
+              <div class="task-card task-available">
+                <div class="task-header">
+                  <div class="task-ref">{{ task.referenceDemande }}</div>
+                  <span class="available-label">Disponible</span>
+                </div>
+                <div class="task-service">
+                  <strong>{{ task.serviceNom }}</strong>
+                  <span class="task-dept">{{ task.departementNom }}</span>
+                </div>
+                <div class="task-client">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {{ task.clientPrenom }} {{ task.clientNom }} · Chambre <strong>{{ task.numChambre }}</strong>
+                </div>
+                @if (task.commentairesClient) {
+                  <p class="task-note">💬 {{ task.commentairesClient }}</p>
+                }
+                <div class="task-footer">
+                  <span class="task-time">⏱ {{ task.tempsTraitementEstime }} min</span>
+                  <span class="priority-badge" [class]="priorityClass(task.priorite)">{{ task.priorite }}</span>
+                  @if (task.enRetard) { <span class="late-badge">⚠ En retard</span> }
+                  <button class="btn-claim" (click)="claimTask(task.idDemande)">Prendre en charge →</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  </main>
+</div>

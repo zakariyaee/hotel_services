@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
@@ -14,51 +14,35 @@ import { AuthService } from '../../../../core/services/auth.service';
 export class LoginComponent implements OnInit {
   email = '';
   motDePasse = '';
-
-  readonly errorMessage = signal('');
-  readonly isLoading = signal(false);
-  readonly isAutoLogin = signal(false);
+  errorMessage = signal('');
+  isLoading = signal(false);
+  isAutoLogin = signal(false);
 
   constructor(
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
-  ) {
-    if (this.authService.isLoggedIn()) {
-      const role = this.authService.getRole();
-      this.router.navigate([this.routeForRole(role ?? '')]);
-    }
-  }
+  ) {}
 
   ngOnInit(): void {
-    // Détection automatique du scan QR Code (paramètres email & code dans l'URL)
-    this.route.queryParamMap.subscribe(params => {
-      const emailParam = params.get('email');
-      const codeParam = params.get('code');
-      const autoParam = params.get('auto');
+    // QR Code auto-login: /login?email=...&code=...&auto=true
+    this.route.queryParams.subscribe(params => {
+      const emailParam = params['email'];
+      const codeParam = params['code'];
+      const autoParam = params['auto'];
 
-      if (emailParam && codeParam) {
+      if (autoParam === 'true' && emailParam && codeParam) {
+        this.isAutoLogin.set(true);
         this.email = emailParam;
         this.motDePasse = codeParam;
-
-        if (autoParam === 'true') {
-          this.isAutoLogin.set(true);
-          // Auto-connexion immédiate lors du scan QR Code
-          this.login();
-        }
+        this.performLogin(emailParam, codeParam);
       }
     });
   }
 
-  login(): void {
-    this.errorMessage.set('');
-    if (!this.email.trim() || !this.motDePasse.trim()) {
-      this.errorMessage.set('Veuillez renseigner votre email et mot de passe.');
-      return;
-    }
-
+  private performLogin(email: string, password: string): void {
     this.isLoading.set(true);
-    this.authService.login({ email: this.email.trim(), motDePasse: this.motDePasse.trim() }).subscribe({
+    this.authService.login({ email: email.trim(), motDePasse: password.trim() }).subscribe({
       next: user => {
         this.isLoading.set(false);
         this.isAutoLogin.set(false);
@@ -73,6 +57,15 @@ export class LoginComponent implements OnInit {
     });
   }
 
+  login(): void {
+    this.errorMessage.set('');
+    if (!this.email.trim() || !this.motDePasse.trim()) {
+      this.errorMessage.set('Veuillez renseigner votre email et mot de passe.');
+      return;
+    }
+    this.performLogin(this.email, this.motDePasse);
+  }
+
   fillDemo(email: string, pass: string): void {
     this.email = email;
     this.motDePasse = pass;
@@ -82,9 +75,10 @@ export class LoginComponent implements OnInit {
   private routeForRole(role: string): string {
     switch (role.toUpperCase()) {
       case 'ADMIN': return '/admin';
-      case 'STAFF':
-      case 'RECEPTIONNISTE':
-      case 'RECEPTIONIST': return '/staff';
+      case 'PERSONNEL': return '/staff/personnel';
+      case 'RECEPTIONNISTE': return '/staff/reception';
+      case 'EMPLOYE':
+      case 'STAFF': return '/staff/employe';
       default: return '/client';
     }
   }

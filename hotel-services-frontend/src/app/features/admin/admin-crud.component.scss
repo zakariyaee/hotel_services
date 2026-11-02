@@ -846,3 +846,585 @@
     }
   }
 }
+
+/* =========================================================================
+   TAB 4: EQUIPE & UTILISATEURS (AFFECTATION AUX DEPARTEMENTS)
+   ========================================================================= */
+.utilisateurs-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.users-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  h3 {
+    margin: 0 0 4px 0;
+    font-size: 1.25rem;
+    color: #172a24;
+  }
+
+  .subtitle {
+    margin: 0;
+    color: #6a7973;
+    font-size: 0.9rem;
+  }
+}
+
+.user-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .filter-pill {
+    padding: 7px 16px;
+    border-radius: 30px;
+    border: 1.5px solid #d9d0c1;
+    background: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #55605b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #1a4231;
+      color: #1a4231;
+    }
+
+    &.active {
+      background: #1a4231;
+      color: #fff;
+      border-color: #1a4231;
+    }
+
+    &.pill-personnel.active { background: #6d28d9; border-color: #6d28d9; }
+    &.pill-employe.active   { background: #059669; border-color: #059669; }
+    &.pill-reception.active { background: #0284c7; border-color: #0284c7; }
+    &.pill-admin.active     { background: #d97706; border-color: #d97706; }
+    &.pill-client.active    { background: #475569; border-color: #475569; }
+  }
+}
+
+.users-table-wrapper {
+  overflow-x: auto;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #ebe5da;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+
+  thead {
+    background: #faf8f5;
+    border-bottom: 1.5px solid #ebe5da;
+
+    th {
+      padding: 14px 18px;
+      font-weight: 700;
+      color: #4a5953;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #f2ede4;
+    transition: background 0.15s ease;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: #faf9f6;
+    }
+
+    td {
+      padding: 14px 18px;
+      vertical-align: middle;
+      color: #172a24;
+    }
+  }
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .user-avatar-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e6ede9;
+    color: #1a4231;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .user-email-muted {
+    font-size: 0.78rem;
+    color: #718079;
+  }
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  &.role-personnel {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #e9d5ff;
+  }
+
+  &.role-employe, &.role-staff {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+
+  &.role-receptionniste {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+
+  &.role-admin {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+
+  &.role-client {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+  }
+}
+
+.dept-assigned-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.dept-unassigned-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px dashed #fdba74;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #ffedd5;
+  }
+}
+
+.affectation-box {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 12px;
+  padding: 18px;
+  margin-top: 14px;
+
+  .form-section-title {
+    color: #166534;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .field-hint {
+    display: block;
+    margin-top: 4px;
+    color: #15803d;
+    font-size: 0.78rem;
+  }
+}
+
+.empty-table-cell {
+  text-align: center;
+  padding: 40px !important;
+  color: #718079;
+  font-style: italic;
+}
+
+/* =========================================================================
+   DEPARTEMENTS PERSONNEL ASSIGNMENT STYLES
+   ========================================================================= */
+.dept-card-enhanced {
+  background: #fff;
+  border: 1.5px solid #ebe5da;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+
+  .dept-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+
+    strong {
+      font-size: 1.15rem;
+      color: #172a24;
+    }
+
+    .dept-count-badge {
+      background: #e6ede9;
+      color: #1a4231;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+  }
+
+  .dept-schedule {
+    display: inline-block;
+    color: #83918b;
+    margin-bottom: 14px;
+    font-size: 0.8rem;
+  }
+}
+
+.dept-personnel-box {
+  background: #faf8f5;
+  border: 1px solid #ebd9c5;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+
+  .dept-personnel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .dept-personnel-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #4a5953;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-assign-small {
+      background: #1a4231;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #235841;
+      }
+    }
+  }
+
+  .no-personnel-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    color: #c2410c;
+    background: #fff7ed;
+    border: 1px dashed #fdba74;
+    padding: 6px 12px;
+    border-radius: 6px;
+
+    .btn-link-action {
+      background: none;
+      border: none;
+      color: #1a4231;
+      text-decoration: underline;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      font-size: 0.8rem;
+    }
+  }
+
+  .personnel-chips-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .member-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid #d9d0c1;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+
+      &.chip-superviseur {
+        border-color: #c084fc;
+        background: #faf5ff;
+
+        .chip-avatar {
+          background: #6d28d9;
+          color: #fff;
+        }
+
+        .chip-sub {
+          color: #7e22ce;
+          font-weight: 700;
+        }
+      }
+
+      .chip-avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #1a4231;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .chip-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.15;
+
+        .chip-name {
+          font-weight: 600;
+          color: #172a24;
+        }
+
+        .chip-sub {
+          font-size: 0.7rem;
+          color: #6a7973;
+        }
+      }
+
+      .chip-delete {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 1.1rem;
+        padding: 0 2px;
+        line-height: 1;
+
+        &:hover {
+          color: #dc2626;
+        }
+      }
+    }
+  }
+}
+
+.btn-primary-light {
+  background: #e6ede9;
+  color: #1a4231;
+  border: 1.5px solid #1a4231;
+  font-weight: 600;
+
+  &:hover {
+    background: #1a4231;
+    color: #fff;
+  }
+}
+
+.dept-current-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ebe5da;
+  border-radius: 8px;
+  padding: 8px;
+  background: #faf9f6;
+
+  .member-row-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #f0eae1;
+
+    .member-item-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .member-item-sub {
+      font-size: 0.76rem;
+      color: #718079;
+    }
+  }
+}
+
+.btn-outline-danger {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #fee2e2;
+  }
+}
+
+.dept-subgroup-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #4a5953;
+  margin: 6px 0 3px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.subgroup-empty-note {
+  font-size: 0.75rem;
+  color: #b45309;
+  font-style: italic;
+  margin-bottom: 6px;
+}
+
+/* Modal Personnel Filters & Search */
+.assign-filter-toolbar {
+  background: #fdfcfa;
+  border: 1px solid #e5ded3;
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
+
+  .toolbar-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #4a5953;
+    display: block;
+    margin-bottom: 8px;
+  }
+}
+
+.assign-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+
+  .af-pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #d9d0c1;
+    background: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #55605b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      border-color: #1a4231;
+      color: #1a4231;
+    }
+
+    &.active {
+      background: #1a4231;
+      color: #fff;
+      border-color: #1a4231;
+    }
+
+    &.af-personnel.active { background: #6d28d9; border-color: #6d28d9; }
+    &.af-employe.active   { background: #059669; border-color: #059669; }
+    &.af-reception.active { background: #0284c7; border-color: #0284c7; }
+    &.af-unassigned.active{ background: #c2410c; border-color: #c2410c; }
+  }
+}
+
+.assign-search-box {
+  input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d9d0c1;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    outline: none;
+    background: #fff;
+    box-sizing: border-box;
+
+    &:focus {
+      border-color: #1a4231;
+      box-shadow: 0 0 0 2px rgba(26, 66, 49, 0.1);
+    }
+  }
+}
+
+.results-count {
+  font-size: 0.76rem;
+  font-weight: normal;
+  color: #166534;
+  margin-left: 6px;
+}
+
+.no-results-warning {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}

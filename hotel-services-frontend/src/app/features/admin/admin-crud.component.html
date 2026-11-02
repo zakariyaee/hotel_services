@@ -45,6 +45,13 @@
       <span>Départements</span>
       <span class="badge">{{ departements().length }}</span>
     </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'utilisateurs'"
+      (click)="setTab('utilisateurs')">
+      <span>Équipe & Utilisateurs</span>
+      <span class="badge">{{ utilisateurs().length }}</span>
+    </button>
   </nav>
 
   <!-- TAB 1: RESERVATIONS & QR PASS -->
@@ -281,13 +288,83 @@
           </div>
           <div class="departements-list">
             @for (dept of departements(); track dept.idDepartement) {
-              <div class="dept-item">
+              <div class="dept-item dept-card-enhanced">
                 <div class="dept-main">
-                  <strong>{{ dept.nom }}</strong>
+                  <div class="dept-title-row">
+                    <strong>{{ dept.nom }}</strong>
+                    <span class="dept-count-badge">
+                      {{ getPersonnelForDepartement(dept.idDepartement).length }} personnel(s)
+                    </span>
+                  </div>
                   <p>{{ dept.description || 'Aucune description' }}</p>
-                  <small>Horaires : {{ dept.horairesOuverture || '24h/24' }}</small>
+                  <small class="dept-schedule">Horaires : {{ dept.horairesOuverture || '24h/24' }}</small>
+
+                  <!-- SECTION PERSONNEL AFFECTE AU DEPARTEMENT -->
+                  <div class="dept-personnel-box">
+                    <div class="dept-personnel-header">
+                      <span class="dept-personnel-label">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Équipe du département ({{ getPersonnelForDepartement(dept.idDepartement).length }})
+                      </span>
+                      <button type="button" class="btn-assign-small" (click)="openAssignPersonnelModal(dept)">
+                        + Assigner du personnel
+                      </button>
+                    </div>
+
+                    @if (getPersonnelForDepartement(dept.idDepartement).length === 0) {
+                      <div class="no-personnel-badge">
+                        <span>⚠ Aucun personnel affecté</span>
+                        <button type="button" class="btn-link-action" (click)="openAssignPersonnelModal(dept)">Affecter maintenant</button>
+                      </div>
+                    } @else {
+                      <!-- 1. Superviseurs (Personnel) -->
+                      <div class="dept-subgroup-title">
+                        👔 Superviseur(s) Responsable(s) :
+                      </div>
+                      @if (getSuperviseursForDept(dept.idDepartement).length === 0) {
+                        <div class="subgroup-empty-note">⚠ Aucun superviseur désigné (rôle PERSONNEL)</div>
+                      } @else {
+                        <div class="personnel-chips-list" style="margin-bottom: 8px;">
+                          @for (member of getSuperviseursForDept(dept.idDepartement); track member.idUtilisateur) {
+                            <div class="member-chip chip-superviseur">
+                              <span class="chip-avatar">{{ member.prenom.slice(0,1) }}{{ member.nom.slice(0,1) }}</span>
+                              <div class="chip-text">
+                                <span class="chip-name">{{ member.prenom }} {{ member.nom }}</span>
+                                <span class="chip-sub">★ {{ member.poste || 'Superviseur' }}</span>
+                              </div>
+                              <button type="button" class="chip-delete" title="Retirer de ce département" (click)="unassignPersonnelFromDept(member.idUtilisateur, $event)">&times;</button>
+                            </div>
+                          }
+                        </div>
+                      }
+
+                      <!-- 2. Employés de terrain -->
+                      <div class="dept-subgroup-title" style="margin-top: 6px;">
+                        👷 Employés de terrain :
+                      </div>
+                      @if (getEmployesForDept(dept.idDepartement).length === 0) {
+                        <div class="subgroup-empty-note">⚠ Aucun employé de terrain assigné</div>
+                      } @else {
+                        <div class="personnel-chips-list">
+                          @for (member of getEmployesForDept(dept.idDepartement); track member.idUtilisateur) {
+                            <div class="member-chip">
+                              <span class="chip-avatar">{{ member.prenom.slice(0,1) }}{{ member.nom.slice(0,1) }}</span>
+                              <div class="chip-text">
+                                <span class="chip-name">{{ member.prenom }} {{ member.nom }}</span>
+                                <span class="chip-sub">{{ member.poste || 'Agent de terrain' }}</span>
+                              </div>
+                              <button type="button" class="chip-delete" title="Retirer de ce département" (click)="unassignPersonnelFromDept(member.idUtilisateur, $event)">&times;</button>
+                            </div>
+                          }
+                        </div>
+                      }
+                    }
+                  </div>
                 </div>
                 <div class="dept-actions">
+                  <button type="button" class="btn btn-sm btn-primary-light" (click)="openAssignPersonnelModal(dept)">
+                    Assigner Personnel
+                  </button>
                   <button type="button" class="btn btn-sm btn-outline" (click)="editDepartement(dept)">Modifier</button>
                   <button type="button" class="btn btn-sm btn-danger" (click)="deleteDepartement(dept.idDepartement!)">Supprimer</button>
                 </div>
@@ -295,6 +372,189 @@
             }
           </div>
         </article>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 4: EQUIPE & UTILISATEURS (AFFECTATION AUX DEPARTEMENTS) -->
+  @if (activeTab === 'utilisateurs') {
+    <div class="tab-content utilisateurs-view">
+      <div class="users-header-bar">
+        <div>
+          <h3>Membres du Personnel & Utilisateurs</h3>
+          <p class="subtitle">Gérez les comptes, définissez les rôles et affectez chaque membre du personnel à son département opérationnel.</p>
+        </div>
+        <button class="btn btn-primary" (click)="openCreateUserModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          Nouveau Membre / Utilisateur
+        </button>
+      </div>
+
+      <!-- Filtres de rôle -->
+      <div class="user-filters">
+        <button class="filter-pill" [class.active]="userRoleFilter === 'ALL'" (click)="userRoleFilter = 'ALL'">Tous ({{ utilisateurs().length }})</button>
+        <button class="filter-pill pill-personnel" [class.active]="userRoleFilter === 'PERSONNEL'" (click)="userRoleFilter = 'PERSONNEL'">Superviseurs / Personnel</button>
+        <button class="filter-pill pill-employe" [class.active]="userRoleFilter === 'EMPLOYE'" (click)="userRoleFilter = 'EMPLOYE'">Employés de terrain</button>
+        <button class="filter-pill pill-reception" [class.active]="userRoleFilter === 'RECEPTIONNISTE'" (click)="userRoleFilter = 'RECEPTIONNISTE'">Réception</button>
+        <button class="filter-pill pill-client" [class.active]="userRoleFilter === 'CLIENT'" (click)="userRoleFilter = 'CLIENT'">Clients</button>
+        <button class="filter-pill pill-admin" [class.active]="userRoleFilter === 'ADMIN'" (click)="userRoleFilter = 'ADMIN'">Administrateurs</button>
+      </div>
+
+      <!-- Tableau des utilisateurs -->
+      <div class="users-table-wrapper card">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Rôle</th>
+              <th>Département Affecté</th>
+              <th>Poste / Fonction</th>
+              <th>Contact</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredUtilisateurs.length === 0) {
+              <tr>
+                <td colspan="6" class="empty-table-cell">Aucun utilisateur trouvé pour ce filtre.</td>
+              </tr>
+            }
+            @for (u of filteredUtilisateurs; track u.idUtilisateur) {
+              <tr class="user-row">
+                <td class="user-cell">
+                  <div class="user-avatar-sm">{{ u.prenom.slice(0,1) }}{{ u.nom.slice(0,1) }}</div>
+                  <div>
+                    <strong>{{ u.prenom }} {{ u.nom }}</strong>
+                    <div class="user-email-muted">{{ u.email }}</div>
+                  </div>
+                </td>
+                <td>
+                  <span class="role-badge role-{{ u.role.toLowerCase() }}">{{ u.role }}</span>
+                </td>
+                <td>
+                  @if (u.departementNom) {
+                    <span class="dept-assigned-badge">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                      {{ u.departementNom }}
+                    </span>
+                  } @else if (u.role === 'PERSONNEL' || u.role === 'EMPLOYE' || u.role === 'RECEPTIONNISTE') {
+                    <span class="dept-unassigned-badge" (click)="openEditUserModal(u)">
+                      ⚠ Non affecté — Affecter
+                    </span>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+                <td>
+                  <strong>{{ u.poste || '—' }}</strong>
+                </td>
+                <td>
+                  <div>{{ u.tel || '—' }}</div>
+                </td>
+                <td style="text-align: right;">
+                  <button type="button" class="btn btn-sm btn-outline" (click)="openEditUserModal(u)">
+                    {{ (u.role === 'PERSONNEL' || u.role === 'EMPLOYE') ? 'Affecter / Modifier' : 'Modifier' }}
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="deleteUser(u.idUtilisateur)">
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: CREER OU MODIFIER UN UTILISATEUR & AFFECTER UN DEPARTEMENT -->
+  @if (showUserModal) {
+    <div class="modal-backdrop" (click)="closeUserModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>{{ editingUserId ? 'Modifier l\'utilisateur & Affectation' : 'Nouveau Membre du Personnel / Utilisateur' }}</h3>
+            <p>Renseignez les informations et sélectionnez le département auquel ce personnel est affecté.</p>
+          </div>
+          <button class="close-modal-btn" (click)="closeUserModal()">&times;</button>
+        </div>
+
+        <form (ngSubmit)="saveUser()" class="styled-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Rôle de l'utilisateur *</label>
+              <select name="userRole" [ngModel]="userForm.role" (ngModelChange)="onRoleChange($event)" required>
+                <option value="PERSONNEL">Personnel / Superviseur (Supervise un département)</option>
+                <option value="EMPLOYE">Employé de terrain (Prise en charge des tâches)</option>
+                <option value="RECEPTIONNISTE">Réceptionniste (Tour de contrôle & Accueil)</option>
+                <option value="ADMIN">Administrateur (Gestion complète)</option>
+                <option value="CLIENT">Client Résident</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Section Affectation Département & Poste (pour Personnel / Employé / Réceptionniste) -->
+          @if (userForm.role === 'PERSONNEL' || userForm.role === 'EMPLOYE' || userForm.role === 'RECEPTIONNISTE') {
+            <div class="affectation-box">
+              <div class="form-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Affectation Opérationnelle
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Département d'affectation *</label>
+                  <select name="idDepartement" [(ngModel)]="userForm.idDepartement" required>
+                    @for (d of departements(); track d.idDepartement) {
+                      <option [value]="d.idDepartement">{{ d.nom }}</option>
+                    }
+                  </select>
+                  <small class="field-hint">Ce personnel recevra et gérera les tâches liées à ce département.</small>
+                </div>
+                <div class="form-group">
+                  <label>Poste / Intitulé de fonction</label>
+                  <input name="userPoste" placeholder="Ex: Superviseur Restauration, Agent Room Service..." [(ngModel)]="userForm.poste">
+                </div>
+              </div>
+            </div>
+          }
+
+          <div class="form-section-title" style="margin-top: 18px;">Informations Personnelles & Connexion</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nom *</label>
+              <input name="userNom" placeholder="Nom de famille" [(ngModel)]="userForm.nom" required>
+            </div>
+            <div class="form-group">
+              <label>Prénom *</label>
+              <input name="userPrenom" placeholder="Prénom" [(ngModel)]="userForm.prenom" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Adresse Email (Identifiant de connexion) *</label>
+              <input type="email" name="userEmail" placeholder="nom.prenom@hotel.com" [(ngModel)]="userForm.email" required>
+            </div>
+            <div class="form-group">
+              <label>Téléphone</label>
+              <input name="userTel" placeholder="+33 6 12 34 56 78" [(ngModel)]="userForm.tel">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>{{ editingUserId ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe initial *' }}</label>
+              <input type="password" name="userPassword" placeholder="••••••••" [(ngModel)]="userForm.motDePasse">
+            </div>
+          </div>
+
+          <div class="form-actions modal-footer-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeUserModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isLoading()">
+              {{ isLoading() ? 'Enregistrement...' : (editingUserId ? 'Mettre à jour l\'affectation' : 'Créer & Affecter') }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   }
@@ -453,6 +713,126 @@
             {{ copiedLink ? 'Lien copié dans le presse-papier !' : 'Copier le lien d\'accès direct' }}
           </button>
           <button class="btn btn-outline" (click)="closePassModal()">Fermer</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: ASSIGNER DU PERSONNEL AU DEPARTEMENT (DEPUIS L'ONGLET DEPARTEMENTS) -->
+  @if (showAssignDeptModal && selectedDeptForAssignment) {
+    <div class="modal-backdrop" (click)="closeAssignPersonnelModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Assigner du Personnel au Département</h3>
+            <p>Département cible : <strong>{{ selectedDeptForAssignment.nom }}</strong></p>
+          </div>
+          <button class="close-modal-btn" (click)="closeAssignPersonnelModal()">&times;</button>
+        </div>
+
+        <div class="styled-form">
+          <!-- Personnel déjà affecté à ce département -->
+          <div class="form-section-title">Personnel actuellement affecté à ce département</div>
+          @if (getPersonnelForDepartement(selectedDeptForAssignment.idDepartement).length === 0) {
+            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 16px; font-style: italic;">
+              Aucun membre n'est actuellement affecté à ce département.
+            </p>
+          } @else {
+            <div class="dept-current-members-list">
+              @for (m of getPersonnelForDepartement(selectedDeptForAssignment.idDepartement); track m.idUtilisateur) {
+                <div class="member-row-item">
+                  <div class="user-avatar-sm">{{ m.prenom.slice(0,1) }}{{ m.nom.slice(0,1) }}</div>
+                  <div class="member-item-info">
+                    <strong>{{ m.prenom }} {{ m.nom }}</strong>
+                    <span class="role-badge role-{{ m.role.toLowerCase() }}">{{ m.role }}</span>
+                    <div class="member-item-sub">{{ m.poste || 'Poste non défini' }} — {{ m.email }}</div>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="unassignPersonnelFromDept(m.idUtilisateur)">
+                    Retirer du département
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Formulaire pour affecter un nouveau personnel -->
+          <div class="affectation-box" style="margin-top: 20px;">
+            <div class="form-section-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+              Affecter un nouveau membre à « {{ selectedDeptForAssignment.nom }} »
+            </div>
+
+            <!-- FILTRAGE DU PERSONNEL DANS LES CHOIX -->
+            <div class="assign-filter-toolbar">
+              <label class="toolbar-label">Filtrer les candidats par profil :</label>
+              <div class="assign-filter-pills">
+                <button type="button" class="af-pill" [class.active]="assignModalRoleFilter === 'ALL'" (click)="assignModalRoleFilter = 'ALL'">
+                  Tous ({{ availablePersonnelForAssignment.length }})
+                </button>
+                <button type="button" class="af-pill af-personnel" [class.active]="assignModalRoleFilter === 'PERSONNEL'" (click)="assignModalRoleFilter = 'PERSONNEL'">
+                  👔 Superviseurs (PERSONNEL)
+                </button>
+                <button type="button" class="af-pill af-employe" [class.active]="assignModalRoleFilter === 'EMPLOYE'" (click)="assignModalRoleFilter = 'EMPLOYE'">
+                  👷 Employés de terrain (EMPLOYE)
+                </button>
+                <button type="button" class="af-pill af-reception" [class.active]="assignModalRoleFilter === 'RECEPTIONNISTE'" (click)="assignModalRoleFilter = 'RECEPTIONNISTE'">
+                  🛎 Réception
+                </button>
+                <button type="button" class="af-pill af-unassigned" [class.active]="assignModalRoleFilter === 'UNASSIGNED'" (click)="assignModalRoleFilter = 'UNASSIGNED'">
+                  ⚠ Non affectés
+                </button>
+              </div>
+
+              <!-- Champ de recherche de personnel -->
+              <div class="assign-search-box">
+                <input
+                  type="text"
+                  placeholder="Rechercher par nom, prénom, email ou poste..."
+                  [(ngModel)]="assignModalSearchQuery"
+                  name="assignModalSearchQuery">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+              <label>
+                Sélectionnez le membre à affecter *
+                <span class="results-count">({{ filteredPersonnelForAssignment.length }} membre(s) correspondant(s))</span>
+              </label>
+              @if (filteredPersonnelForAssignment.length === 0) {
+                <div class="no-results-warning">
+                  Aucun membre ne correspond à ce filtre. Essayez de sélectionner un autre rôle ou de vider la recherche.
+                </div>
+              } @else {
+                <select name="selectedPersonnel" [ngModel]="selectedPersonnelIdToAssign" (ngModelChange)="onPersonnelSelectedForAssignment($event)">
+                  <option [ngValue]="null" disabled>-- Choisir le membre à assigner --</option>
+                  @for (p of filteredPersonnelForAssignment; track p.idUtilisateur) {
+                    <option [value]="p.idUtilisateur">
+                      [{{ p.role }}] {{ p.prenom }} {{ p.nom }} — Actuellement : {{ p.departementNom ? p.departementNom : 'Non affecté' }} ({{ p.email }})
+                    </option>
+                  }
+                </select>
+              }
+            </div>
+
+            <div class="form-group">
+              <label>Poste / Intitulé de fonction dans ce département</label>
+              <input name="assignedPoste" [(ngModel)]="assignedPosteInput" placeholder="Ex: Superviseur Restauration, Agent Room Service, Gouvernante...">
+            </div>
+
+            <div class="form-actions" style="margin-top: 14px;">
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="!selectedPersonnelIdToAssign || isLoading()"
+                (click)="confirmAssignPersonnelToDept()">
+                {{ isLoading() ? 'Assignation...' : 'Confirmer l\'Assignation à ce Département' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="form-actions modal-footer-actions" style="margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" (click)="closeAssignPersonnelModal()">Terminer</button>
+          </div>
         </div>
       </div>
     </div>

@@ -5,10 +5,13 @@ import { HotelServiceService } from '../../core/services/service.service';
 import { DepartementService } from '../../core/services/departement.service';
 import { ChambreService } from '../../core/services/chambre.service';
 import { AdminReservationService } from '../../core/services/admin-reservation.service';
+import { AdminUtilisateurService } from '../../core/services/admin-utilisateur.service';
 import { Service } from '../../core/models/service.model';
 import { Departement } from '../../core/models/departement.model';
 import { Chambre } from '../../core/models/chambre.model';
 import { AdminReservation, CreateReservationDto } from '../../core/models/admin-reservation.model';
+import { AdminUtilisateur, CreateAdminUtilisateurDto } from '../../core/models/admin-utilisateur.model';
+import { Role } from '../../core/models/enums.model';
 
 @Component({
   selector: 'app-admin-crud',
@@ -19,13 +22,14 @@ import { AdminReservation, CreateReservationDto } from '../../core/models/admin-
 })
 export class AdminCrudComponent implements OnInit {
   // Navigation tabs in Admin
-  activeTab: 'reservations' | 'services' | 'departements' = 'reservations';
+  activeTab: 'reservations' | 'services' | 'departements' | 'utilisateurs' = 'reservations';
 
   // Signals for data
   readonly reservations = signal<AdminReservation[]>([]);
   readonly services = signal<Service[]>([]);
   readonly departements = signal<Departement[]>([]);
   readonly chambres = signal<Chambre[]>([]);
+  readonly utilisateurs = signal<AdminUtilisateur[]>([]);
   readonly message = signal('');
   readonly isLoading = signal(false);
 
@@ -64,18 +68,42 @@ export class AdminCrudComponent implements OnInit {
   departementId: number | null = null;
   departementForm = { nom: '', description: '', horairesOuverture: '' };
 
+  // Utilisateur & Affectation State
+  showUserModal = false;
+  editingUserId: number | null = null;
+  userRoleFilter: string = 'ALL';
+  userForm: CreateAdminUtilisateurDto = {
+    nom: '',
+    prenom: '',
+    email: '',
+    motDePasse: '',
+    tel: '',
+    role: 'PERSONNEL' as Role,
+    idDepartement: 1,
+    poste: 'Superviseur Restauration',
+  };
+
+  // Assignation directe depuis l'onglet Départements
+  showAssignDeptModal = false;
+  selectedDeptForAssignment: Departement | null = null;
+  selectedPersonnelIdToAssign: number | null = null;
+  assignedPosteInput: string = '';
+  assignModalRoleFilter: 'ALL' | 'PERSONNEL' | 'EMPLOYE' | 'RECEPTIONNISTE' | 'UNASSIGNED' = 'ALL';
+  assignModalSearchQuery: string = '';
+
   constructor(
     private serviceApi: HotelServiceService,
     private departementApi: DepartementService,
     private chambreApi: ChambreService,
-    private adminReservationApi: AdminReservationService
+    private adminReservationApi: AdminReservationService,
+    private utilisateurApi: AdminUtilisateurService
   ) {}
 
   ngOnInit(): void {
     this.reloadAll();
   }
 
-  setTab(tab: 'reservations' | 'services' | 'departements'): void {
+  setTab(tab: 'reservations' | 'services' | 'departements' | 'utilisateurs'): void {
     this.activeTab = tab;
     this.message.set('');
   }
@@ -85,6 +113,7 @@ export class AdminCrudComponent implements OnInit {
     this.reloadServices();
     this.reloadDepartements();
     this.reloadChambres();
+    this.reloadUtilisateurs();
   }
 
   reloadReservations(): void {
@@ -284,5 +313,220 @@ export class AdminCrudComponent implements OnInit {
   cancelDepartement(): void {
     this.departementId = null;
     this.departementForm = { nom: '', description: '', horairesOuverture: '' };
+  }
+
+  // --- GESTION DES UTILISATEURS & AFFECTATION AU PERSONNEL ---
+  reloadUtilisateurs(): void {
+    this.utilisateurApi.getAll().subscribe({
+      next: data => this.utilisateurs.set(data),
+      error: err => console.warn('Could not load users', err),
+    });
+  }
+
+  get filteredUtilisateurs(): AdminUtilisateur[] {
+    const list = this.utilisateurs();
+    if (this.userRoleFilter === 'ALL') return list;
+    return list.filter(u => u.role === this.userRoleFilter);
+  }
+
+  openCreateUserModal(): void {
+    this.editingUserId = null;
+    const defaultDept = this.departements()[0]?.idDepartement ?? 1;
+    this.userForm = {
+      nom: '',
+      prenom: '',
+      email: '',
+      motDePasse: 'staff123',
+      tel: '',
+      role: 'PERSONNEL' as Role,
+      idDepartement: defaultDept,
+      poste: 'Superviseur Restauration',
+    };
+    this.showUserModal = true;
+  }
+
+  openEditUserModal(user: AdminUtilisateur): void {
+    this.editingUserId = user.idUtilisateur;
+    this.userForm = {
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+      motDePasse: '',
+      tel: user.tel ?? '',
+      role: user.role,
+      idDepartement: user.idDepartement ?? (this.departements()[0]?.idDepartement ?? 1),
+      poste: user.poste ?? '',
+    };
+    this.showUserModal = true;
+  }
+
+  closeUserModal(): void {
+    this.showUserModal = false;
+    this.editingUserId = null;
+  }
+
+  onRoleChange(newRole: string): void {
+    this.userForm.role = newRole as Role;
+    if (newRole === 'PERSONNEL' && !this.userForm.poste) {
+      this.userForm.poste = 'Superviseur';
+    } else if (newRole === 'EMPLOYE' && !this.userForm.poste) {
+      this.userForm.poste = 'Agent de service';
+    } else if (newRole === 'RECEPTIONNISTE' && !this.userForm.poste) {
+      this.userForm.poste = 'Réceptionniste';
+    }
+  }
+
+  saveUser(): void {
+    if (!this.userForm.nom.trim() || !this.userForm.prenom.trim() || !this.userForm.email.trim()) {
+      this.message.set('Veuillez renseigner les champs obligatoires (nom, prénom, email).');
+      return;
+    }
+
+    this.isLoading.set(true);
+    const op = this.editingUserId === null
+      ? this.utilisateurApi.create(this.userForm)
+      : this.utilisateurApi.update(this.editingUserId, this.userForm);
+
+    op.subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.message.set(this.editingUserId === null ? 'Utilisateur créé et affecté avec succès !' : 'Utilisateur mis à jour avec succès !');
+        this.closeUserModal();
+        this.reloadUtilisateurs();
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.message.set(err.error?.message || 'Erreur lors de l\'enregistrement de l\'utilisateur.');
+      },
+    });
+  }
+
+  deleteUser(id: number): void {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
+    this.utilisateurApi.delete(id).subscribe({
+      next: () => {
+        this.message.set('Utilisateur supprimé avec succès.');
+        this.reloadUtilisateurs();
+      },
+      error: (err) => this.message.set(err.error?.message || 'Impossible de supprimer cet utilisateur.'),
+    });
+  }
+
+  // --- ACTIONS D'ASSIGNATION DEPUIS L'ONGLET DÉPARTEMENTS ---
+  getPersonnelForDepartement(deptId: number | undefined): AdminUtilisateur[] {
+    if (!deptId) return [];
+    return this.utilisateurs().filter(u => u.idDepartement === deptId);
+  }
+
+  getSuperviseursForDept(deptId: number | undefined): AdminUtilisateur[] {
+    if (!deptId) return [];
+    return this.utilisateurs().filter(u => u.idDepartement === deptId && u.role === 'PERSONNEL');
+  }
+
+  getEmployesForDept(deptId: number | undefined): AdminUtilisateur[] {
+    if (!deptId) return [];
+    return this.utilisateurs().filter(u => u.idDepartement === deptId && (u.role === 'EMPLOYE' || u.role === 'STAFF'));
+  }
+
+  get availablePersonnelForAssignment(): AdminUtilisateur[] {
+    // Tous les membres du staff (PERSONNEL, EMPLOYE, RECEPTIONNISTE) - exclut CLIENT et ADMIN
+    return this.utilisateurs().filter(u =>
+      u.role === 'PERSONNEL' || u.role === 'EMPLOYE' || u.role === 'RECEPTIONNISTE' || u.role === 'STAFF'
+    );
+  }
+
+  get filteredPersonnelForAssignment(): AdminUtilisateur[] {
+    let list = this.availablePersonnelForAssignment;
+
+    // Filtre par rôle
+    if (this.assignModalRoleFilter === 'PERSONNEL') {
+      list = list.filter(u => u.role === 'PERSONNEL');
+    } else if (this.assignModalRoleFilter === 'EMPLOYE') {
+      list = list.filter(u => u.role === 'EMPLOYE' || u.role === 'STAFF');
+    } else if (this.assignModalRoleFilter === 'RECEPTIONNISTE') {
+      list = list.filter(u => u.role === 'RECEPTIONNISTE');
+    } else if (this.assignModalRoleFilter === 'UNASSIGNED') {
+      list = list.filter(u => !u.idDepartement);
+    }
+
+    // Filtre par recherche textuelle (nom, prénom, email, poste)
+    if (this.assignModalSearchQuery && this.assignModalSearchQuery.trim()) {
+      const q = this.assignModalSearchQuery.toLowerCase().trim();
+      list = list.filter(u =>
+        u.nom.toLowerCase().includes(q) ||
+        u.prenom.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.poste && u.poste.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }
+
+  openAssignPersonnelModal(dept: Departement): void {
+    this.selectedDeptForAssignment = dept;
+    this.selectedPersonnelIdToAssign = null;
+    this.assignedPosteInput = '';
+    this.assignModalRoleFilter = 'ALL';
+    this.assignModalSearchQuery = '';
+    this.showAssignDeptModal = true;
+  }
+
+  closeAssignPersonnelModal(): void {
+    this.showAssignDeptModal = false;
+    this.selectedDeptForAssignment = null;
+  }
+
+  onPersonnelSelectedForAssignment(userIdStr: string): void {
+    const id = Number(userIdStr);
+    this.selectedPersonnelIdToAssign = id;
+    const u = this.utilisateurs().find(x => x.idUtilisateur === id);
+    if (u) {
+      this.assignedPosteInput = u.poste || (u.role === 'PERSONNEL' ? 'Superviseur' : 'Agent');
+    }
+  }
+
+  confirmAssignPersonnelToDept(): void {
+    if (!this.selectedDeptForAssignment?.idDepartement || !this.selectedPersonnelIdToAssign) {
+      this.message.set('Veuillez sélectionner un membre du personnel.');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.utilisateurApi.assignDepartement(
+      this.selectedPersonnelIdToAssign,
+      this.selectedDeptForAssignment.idDepartement,
+      this.assignedPosteInput
+    ).subscribe({
+      next: (updatedUser) => {
+        this.isLoading.set(false);
+        this.message.set(`${updatedUser.prenom} ${updatedUser.nom} a été assigné(e) avec succès au département « ${this.selectedDeptForAssignment?.nom} » !`);
+        this.reloadUtilisateurs();
+        this.selectedPersonnelIdToAssign = null;
+        this.assignedPosteInput = '';
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.message.set(err.error?.message || 'Erreur lors de l\'assignation du personnel.');
+      },
+    });
+  }
+
+  unassignPersonnelFromDept(userId: number, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!confirm('Désassigner ce membre de ce département ?')) return;
+
+    this.isLoading.set(true);
+    this.utilisateurApi.unassignDepartement(userId).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.message.set('Personnel retiré du département avec succès.');
+        this.reloadUtilisateurs();
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.message.set(err.error?.message || 'Impossible de retirer le personnel.');
+      },
+    });
   }
 }

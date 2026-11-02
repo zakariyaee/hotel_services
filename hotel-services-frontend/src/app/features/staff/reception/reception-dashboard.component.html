@@ -1,0 +1,240 @@
+<div class="staff-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-stars">★★★★★</span>
+      <span class="brand-name">Tour de Contrôle</span>
+    </div>
+    <div class="sidebar-profile">
+      <div class="avatar">{{ currentUser?.email?.slice(0,2)?.toUpperCase() || 'RC' }}</div>
+      <div class="profile-info">
+        <strong>{{ currentUser?.email?.split('@')?.[0] || '' }}</strong>
+        <span class="role-badge reception">Réceptionniste</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item" [class.active]="activeTab === 'overview'" (click)="activeTab = 'overview'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Vue d'ensemble
+        @if (overview()?.alertesRetard) { <span class="nav-badge urgent">{{ overview()!.alertesRetard }}</span> }
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'demandes'" (click)="activeTab = 'demandes'; loadDemandes()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Toutes les Demandes
+        <span class="nav-badge pool">{{ overview()?.totalDemandes || 0 }}</span>
+      </button>
+      <button class="nav-item" [class.active]="activeTab === 'create'" (click)="activeTab = 'create'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        Créer une Demande
+      </button>
+    </nav>
+    <button class="logout-btn" (click)="logout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Déconnexion
+    </button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-area">
+    @if (toastMsg()) {
+      <div class="toast" [class.toast-error]="toastError()">{{ toastMsg() }}</div>
+    }
+
+    <!-- VUE D'ENSEMBLE -->
+    @if (activeTab === 'overview') {
+      <section class="overview-section">
+        <div class="page-header">
+          <div>
+            <span class="section-tag">RÉCEPTION · TOUR DE CONTRÔLE</span>
+            <h2>Tableau de Bord Général</h2>
+            <p class="page-sub">Visualisez l'ensemble des demandes clients et l'état de l'hôtel en temps réel.</p>
+          </div>
+          <button class="btn-refresh" (click)="loadAll()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Actualiser
+          </button>
+        </div>
+
+        @if (overview()) {
+          <div class="kpi-grid">
+            <div class="kpi-card kpi-total">
+              <span class="kpi-icon">📋</span>
+              <span class="kpi-num">{{ overview()!.totalDemandes }}</span>
+              <span class="kpi-label">Demandes totales</span>
+            </div>
+            <div class="kpi-card kpi-pending">
+              <span class="kpi-icon">⏳</span>
+              <span class="kpi-num">{{ overview()!.demandesEnAttente }}</span>
+              <span class="kpi-label">En attente</span>
+            </div>
+            <div class="kpi-card kpi-inprogress">
+              <span class="kpi-icon">⚙️</span>
+              <span class="kpi-num">{{ overview()!.demandesEnCours }}</span>
+              <span class="kpi-label">En cours de traitement</span>
+            </div>
+            <div class="kpi-card kpi-done">
+              <span class="kpi-icon">✅</span>
+              <span class="kpi-num">{{ overview()!.demandesTerminees }}</span>
+              <span class="kpi-label">Terminées</span>
+            </div>
+            <div class="kpi-card kpi-alert" [class.kpi-alert-active]="overview()!.alertesRetard > 0">
+              <span class="kpi-icon">⚠️</span>
+              <span class="kpi-num">{{ overview()!.alertesRetard }}</span>
+              <span class="kpi-label">Alertes SLA / Retard</span>
+            </div>
+            <div class="kpi-card kpi-rooms">
+              <span class="kpi-icon">🏨</span>
+              <span class="kpi-num">{{ overview()!.totalChambresOccupees }}</span>
+              <span class="kpi-label">Chambres occupées</span>
+            </div>
+          </div>
+        }
+
+        <!-- Chambres en cours -->
+        <div class="rooms-section">
+          <h3>Clients actuellement en séjour ({{ roomGuests().length }})</h3>
+          @if (roomGuests().length === 0) {
+            <p class="empty-sub">Aucun client en séjour actif trouvé.</p>
+          } @else {
+            <div class="rooms-grid">
+              @for (guest of roomGuests(); track guest.idClient) {
+                <div class="room-card">
+                  <span class="room-num">{{ guest.numChambre }}</span>
+                  <div class="room-info">
+                    <strong>{{ guest.clientPrenom }} {{ guest.clientNom }}</strong>
+                    <span>{{ guest.typeChambre || 'Chambre standard' }}</span>
+                    <span class="room-email">{{ guest.clientEmail }}</span>
+                  </div>
+                  <button class="btn-create-small" (click)="createForm.idClient = guest.idClient; activeTab = 'create'">
+                    + Demande
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- TOUTES LES DEMANDES -->
+    @if (activeTab === 'demandes') {
+      <section class="task-section">
+        <div class="section-header">
+          <h2>Toutes les Demandes</h2>
+          <div class="filters">
+            <input class="search-input" type="search" placeholder="Rechercher par chambre, service, client..." [(ngModel)]="searchQuery" (input)="loadDemandes()">
+            <select class="filter-select" [(ngModel)]="filterStatut" (change)="loadDemandes()">
+              <option value="">Tous les statuts</option>
+              <option value="EN_ATTENTE">En attente</option>
+              <option value="EN_COURS">En cours</option>
+              <option value="PRISE_EN_CHARGE">Prise en charge</option>
+              <option value="TERMINEE">Terminée</option>
+              <option value="REJETEE">Rejetée</option>
+            </select>
+            <button class="btn-refresh" (click)="loadDemandes()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </button>
+          </div>
+        </div>
+
+        @if (filteredDemandes.length === 0) {
+          <div class="empty-state"><div class="empty-icon">📋</div><h3>Aucune demande trouvée</h3></div>
+        } @else {
+          <div class="task-list">
+            @for (task of filteredDemandes; track task.idDemande) {
+              <div class="task-card" [class.task-late]="task.enRetard">
+                <div class="task-header">
+                  <div class="task-ref">{{ task.referenceDemande }}</div>
+                  <div class="task-meta">
+                    <span class="dept-tag">{{ task.departementNom }}</span>
+                    <span class="task-status" [class]="'status-' + task.statut">{{ statusLabel(task.statut) }}</span>
+                  </div>
+                </div>
+                <div class="task-service"><strong>{{ task.serviceNom }}</strong></div>
+                <div class="task-client">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {{ task.clientPrenom }} {{ task.clientNom }} · Chambre <strong>{{ task.numChambre }}</strong>
+                </div>
+                @if (task.nomEmployeAssigne) {
+                  <div class="task-assignee">Pris en charge par : <strong>{{ task.nomEmployeAssigne }}</strong></div>
+                } @else if (task.statut === 'EN_ATTENTE') {
+                  <div class="task-unassigned">Non encore assigné</div>
+                }
+                <div class="task-footer">
+                  <span class="task-time">⏱ {{ task.tempsTraitementEstime }} min</span>
+                  <span class="priority-badge" [class]="priorityClass(task.priorite)">{{ task.priorite }}</span>
+                  @if (task.enRetard) { <span class="late-badge">⚠ +{{ task.retardMinutes }} min retard</span> }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- CRÉER UNE DEMANDE AU NOM DU CLIENT -->
+    @if (activeTab === 'create') {
+      <section class="create-section">
+        <div class="page-header">
+          <div>
+            <span class="section-tag">SUPPORT CLIENT</span>
+            <h2>Créer une Demande pour un Client</h2>
+            <p class="page-sub">Un client vous contacte à la réception ? Créez sa demande directement en son nom.</p>
+          </div>
+        </div>
+
+        <div class="create-card">
+          <form (ngSubmit)="createDemand()" class="styled-form">
+            <div class="form-group">
+              <label>Client & Chambre *</label>
+              <select [(ngModel)]="createForm.idClient" name="client" required>
+                <option [value]="0">-- Sélectionner un client en séjour --</option>
+                @for (guest of roomGuests(); track guest.idClient) {
+                  <option [value]="guest.idClient">
+                    Chambre {{ guest.numChambre }} · {{ guest.clientPrenom }} {{ guest.clientNom }} ({{ guest.typeChambre }})
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Service demandé *</label>
+              <select [(ngModel)]="createForm.idService" name="service" required>
+                <option [value]="0">-- Sélectionner un service --</option>
+                @for (svc of services(); track svc.idService) {
+                  <option [value]="svc.idService">
+                    {{ svc.nom }} ({{ svc.departement?.nom || 'Département' }}, {{ svc.dureeEstimee }} min)
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Priorité</label>
+              <select [(ngModel)]="createForm.priorite" name="priorite">
+                <option value="BASSE">Basse</option>
+                <option value="NORMALE">Normale</option>
+                <option value="HAUTE">Haute</option>
+                <option value="URGENTE">Urgente</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Commentaires / Notes du client</label>
+              <textarea [(ngModel)]="createForm.commentairesClient" name="notes" rows="3" placeholder="Ex: Allergique aux arachides, préférence pour le room service sans couverts..."></textarea>
+            </div>
+
+            <div class="info-alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <div>La demande sera créée avec votre identité comme réceptionniste référent. Elle sera routée automatiquement vers le département responsable.</div>
+            </div>
+
+            <button type="submit" class="btn-primary" [disabled]="isCreating()">
+              {{ isCreating() ? 'Création en cours...' : 'Créer la demande →' }}
+            </button>
+          </form>
+        </div>
+      </section>
+    }
+  </main>
+</div>
