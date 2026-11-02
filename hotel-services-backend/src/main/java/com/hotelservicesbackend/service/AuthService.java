@@ -1,8 +1,16 @@
 package com.hotelservicesbackend.service;
 
+import com.hotelservicesbackend.dto.auth.GuestAccessRequest;
+import com.hotelservicesbackend.dto.auth.GuestAccessResponse;
 import com.hotelservicesbackend.dto.auth.LoginRequest;
 import com.hotelservicesbackend.dto.auth.LoginResponse;
+import com.hotelservicesbackend.entity.Chambre;
+import com.hotelservicesbackend.entity.Client;
+import com.hotelservicesbackend.entity.ClientAccessToken;
+import com.hotelservicesbackend.entity.Reservation;
 import com.hotelservicesbackend.entity.Utilisateur;
+import com.hotelservicesbackend.entity.enums.StatutReservation;
+import com.hotelservicesbackend.repository.ClientAccessTokenRepository;
 import com.hotelservicesbackend.repository.UtilisateurRepository;
 import com.hotelservicesbackend.security.JwtUtil;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,22 +18,29 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 public class AuthService {
 
     private final UtilisateurRepository utilisateurRepository;
+    private final ClientAccessTokenRepository clientAccessTokenRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
     public AuthService(
             UtilisateurRepository utilisateurRepository,
+            ClientAccessTokenRepository clientAccessTokenRepository,
             AuthenticationManager authenticationManager,
             JwtUtil jwtUtil,
             UserDetailsService userDetailsService
     ) {
         this.utilisateurRepository = utilisateurRepository;
+        this.clientAccessTokenRepository = clientAccessTokenRepository;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
@@ -52,6 +67,69 @@ public class AuthService {
                 utilisateur.getEmail(),
                 utilisateur.getRole().name(),
                 token
+        );
+    }
+
+    @Transactional
+    public GuestAccessResponse guestLogin(GuestAccessRequest request) {
+        String code = request.accessCode().trim();
+
+        ClientAccessToken accessToken = clientAccessTokenRepository.findByTokenHash(code)
+                .orElseThrow(() -> new IllegalArgumentException("Code d'accès introuvable. Veuillez vérifier votre code."));
+
+        if (accessToken.isRevoked()) {
+            throw new IllegalStateException("Ce code d'accès a été révoqué.");
+        }
+
+        if (accessToken.getDateExpiration().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Ce code d'accès a expiré.");
+        }
+
+        Reservation reservation = accessToken.getReservation();
+        if (reservation == null) {
+            throw new IllegalStateException("Aucune réservation associée à ce code.");
+        }
+
+        LocalDate today = LocalDate.now();
+        if (reservation.getDateDebut() != null && today.isBefore(reservation.getDateDebut())) {
+            throw new IllegalStateException("Votre séjour n'a pas encore commencé (début prévu le " + reservation.getDateDebut() + ").");
+        }
+
+        if (reservation.getDateFin() != null && today.isAfter(reservation.getDateFin())) {
+            throw new IllegalStateException("Votre séjour est terminé (fin le " + reservation.getDateFin() + "). Le code n'est plus actif.");
+        }
+
+        if (reservation.getStatut() == StatutReservation.ANNULEE) {
+            throw new IllegalStateException("Cette réservation a été annulée.");
+        }
+
+        // Incrémentation du compteur d'utilisations
+        accessToken.setNbrUtilisations(accessToken.getNbrUtilisations() + 1);
+        clientAccessTokenRepository.save(accessToken);
+
+        Client client = reservation.getClient();
+        Chambre chambre = reservation.getChambre();
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(client.getEmail());
+        String token = jwtUtil.generateGuestToken(
+                userDetails,
+                client.getIdUtilisateur(),
+                reservation.getIdReservation(),
+                chambre != null ? chambre.getNumChambre() : "N/A"
+        );
+
+        return new GuestAccessResponse(
+                client.getIdUtilisateur(),
+                client.getEmail(),
+                client.getNom(),
+                client.getPrenom(),
+                "CLIENT",
+                token,
+                reservation.getIdReservation(),
+                chambre != null ? chambre.getNumChambre() : "N/A",
+                chambre != null ? chambre.getTypeChambre() : "Chambre Standard",
+                reservation.getDateDebut(),
+                reservation.getDateFin()
         );
     }
 }

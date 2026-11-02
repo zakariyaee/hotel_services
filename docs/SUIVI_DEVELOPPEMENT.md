@@ -13,72 +13,59 @@ Ce fichier est le journal chronologique du projet. Il doit être mis à jour apr
 
 **Dernière mise à jour :** 2026-11-02
 
-**Phase actuelle :** Étape 1 — Authentification et accès par rôle (TERMINÉE ✅)
+**Phase actuelle :** Étape 2 — Accès client temporaire (TERMINÉE ✅)
 
-**Prochaine étape :** Étape 2 — Accès client temporaire (code de réservation) & Étape 3 — Catalogue des services.
+**Branche Git actuelle :** `feature/etape-2-acces-client`
+
+**Prochaine étape :** Étape 3 — Services & Règle d'Assignation (Admin)
+
+## Décisions Métier Validées
+
+1. **Accès Client Séjour Temporaire** :
+   - Accès sans mot de passe complexe via code réservation (`RES-2026-001` ou `STAY-201`).
+   - Contrôle strict : non révoqué, date d'expiration valide, séjour en cours.
+   - Génération de token JWT avec claims (`userId`, `role=CLIENT`, `reservationId`, `numChambre`).
+2. **Interface Bimodale** :
+   - Onglet 1 : "Accès Séjour Client" (pour les clients avec code).
+   - Onglet 2 : "Équipe & Personnel" (pour Staff, Superviseur, Réception, Admin).
+3. **Deux modes d'assignation selon le service (réglable par l'Admin via `necessiteSupervision`)** :
+   - Simple (`false`) : Auto-prise par l'employé.
+   - Supervisé (`true`) : Affectation obligatoire par le Personnel (superviseur).
+4. **Alertes de Retard (SLA)** :
+   - Notification si la tâche dépasse le temps estimé.
 
 ## Avancement par domaine
 
 | Domaine | État | Commentaire |
 |---|---|---|
-| Page d'accueil | [x] | Page Maison Élan avec route `/` |
-| Login frontend | [x] | Identifiant email et mot de passe avec validation |
-| Login backend | [x] | `POST /api/auth/login` sécurisé |
-| DTO d'authentification | [x] | `LoginRequest` (avec Bean Validation) et `LoginResponse` (avec token JWT) |
-| Rôles | [x] | `CLIENT`, `STAFF`, `ADMIN` normalisés |
-| Redirection par rôle | [x] | Routes `/client`, `/staff`, `/admin` |
-| JWT | [x] | JJWT 0.12.6, JwtUtil, JwtAuthFilter avec extraction userId & role |
-| BCrypt | [x] | Passwords hashés dans `data.sql` et vérifiés via `BCryptPasswordEncoder` |
-| Spring Security | [x] | Stateless, CORS unifié, CSRF désactivé, RBAC par endpoints |
-| Guards & Interceptor Angular | [x] | `jwtInterceptor`, `authGuard`, `roleGuard` activés sur toutes les routes privées |
-| Services | [~] | Entités et endpoints existants, DTOs de réponse à affiner |
-| Demandes | [~] | Entités, endpoints et écrans existants, à relier aux tokens d'accès |
-| Suivi des statuts | [ ] | À aligner sur `CREATED`, `ACKNOWLEDGED`, `IN_PROGRESS`, `COMPLETED` |
-| Notifications WebSocket | [ ] | Configuration STOMP à ajouter |
-| Administration | [ ] | CRUD utilisateurs et départements à finaliser |
-| Statistiques | [ ] | À créer après les demandes persistées |
-| Tests complets | [ ] | À organiser par fonctionnalité |
+| Sécurité & Auth | [x] | Spring Security, BCrypt, JWT, Guards Angular |
+| Accès Client Séjour | [x] | Endpoint `POST /api/auth/guest-access`, DTOs, interface à onglets |
+| Services & Règles Admin | [~] | Prêt pour l'Étape 3 (flag `necessiteSupervision` sur Service) |
+| Demandes & Routage | [ ] | Routage automatique par département du service |
+| Traitement Staff | [ ] | Séparation Vue Employé (exécutant) / Vue Personnel (superviseur) |
+| Tour de Contrôle Réception | [ ] | Vue transversale et support client |
+| Notifications SLA & WebSocket | [ ] | Détection automatique des retards et STOMP |
+| Administration & Stats | [ ] | Configuration des services et indicateurs de performance |
+| Recette & Démo | [ ] | Validation finale du scénario complet |
 
 ## Journal des changements
 
-### 2026-11-02 — Sécurisation complète Authentification (Étape 1)
+### 2026-11-02 — Implémentation Étape 2 (Accès Client Temporaire Séjour)
 
 - **Responsables :** Personne A (Backend) & Personne B (Frontend)
-- **Fonctionnalité :** Sécurité, Authentification, JWT, BCrypt, RBAC, Guards
+- **Fonctionnalité :** Accès client temporaire lié à la réservation (AUTH03, AUTH04, RM-01, RM-02)
 - **Changements backend :**
-  - Ajout des dépendances dans `pom.xml` (`spring-boot-starter-security`, `jjwt-api`, `jjwt-impl`, `jjwt-jackson` 0.12.6, `spring-boot-starter-validation`).
-  - Ajout des propriétés `jwt.secret` et `jwt.expiration` dans `application.properties`.
-  - Création de `JwtUtil.java` pour génération et validation des tokens JWT avec claims (userId, role).
-  - Création de `UserDetailsServiceImpl.java` implémentant `UserDetailsService`.
-  - Création de `JwtAuthFilter.java` interceptant le header `Authorization: Bearer <token>`.
-  - Création de `SecurityConfig.java` configurant CORS centralisé, session STATELESS, et règles RBAC.
-  - Mise à jour de `AuthService.java` avec `AuthenticationManager` et `BCryptPasswordEncoder`.
-  - Mise à jour de `AuthController.java` avec `@Valid` et gestion d'exceptions 401.
-  - Mise à jour de `data.sql` avec les hash BCrypt pour les comptes de test.
-  - Suppression des annotations `@CrossOrigin` éparpillées sur les contrôleurs.
+  - Création des DTOs `GuestAccessRequest` et `GuestAccessResponse`.
+  - Enrichissement de `JwtUtil` (`generateGuestToken` avec claims `reservationId` et `numChambre`).
+  - Implémentation de `AuthService.guestLogin(code)` avec vérification des dates de séjour, révocation et expiration.
+  - Ajout de l'endpoint `POST /api/auth/guest-access` dans `AuthController`.
+  - Ajout de codes de test dans `data.sql` : `RES-2026-001`, `STAY-201`, `EXP-999`.
 - **Changements frontend :**
-  - Mise à jour de `LoginResponse` avec le champ `token`.
-  - Enrichissement de `AuthService` (`getToken()`, `isLoggedIn()`, `getRole()`, gestion `localStorage`).
-  - Création de `jwt.interceptor.ts` injectant le token Bearer sur les requêtes HTTP.
-  - Création de `authGuard.ts` pour rediriger les utilisateurs non authentifiés vers `/login`.
-  - Création de `roleGuard.ts` pour vérifier les droits d'accès selon le rôle.
-  - Mise à jour de `app.config.ts` pour enregistrer `withInterceptors([jwtInterceptor])`.
-  - Protection des routes `/client`, `/staff`, `/admin` dans `app.routes.ts`.
-  - Nettoyage des fallbacks hardcodés dans `client-dashboard.component.ts`.
+  - Création des modèles TypeScript `GuestAccessRequest` et `GuestAccessResponse`.
+  - Enrichissement de `AuthService` Angular avec `guestLogin()`, `getRoomNumber()`, `getRoomType()`.
+  - Refonte de `LoginComponent` avec onglets switchables ("Accès Séjour Client" vs "Équipe & Personnel").
+  - Dynamisation de `ClientDashboardComponent` : affichage réel de la chambre (ex: 201) et du nom du client.
 - **Validation :**
-  - Compilation Java Maven : `mvnw.cmd test-compile` -> BUILD SUCCESS (0 erreurs).
-  - Compilation TypeScript : `npx tsc --noEmit` -> 0 erreurs.
-- **Résultat :** Terminé ✅
-- **Prochaine action :** Étape 2 — Accès client temporaire (code de réservation) & Étape 3 — Catalogue des services.
-
-## Prochaine tâche
-
-### Tâche DEV-002 — Accès client temporaire & Catalogue des services
-
-**Personne A (Backend) :**
-- [ ] Endpoint `POST /api/auth/guest-access` pour valider un code réservation actif et générer un token guest.
-- [ ] DTO `ServiceResponse` et sécurisation des endpoints de `ServiceController`.
-
-**Personne B (Frontend) :**
-- [ ] Écran/modal de saisie du code d'accès réservation client.
-- [ ] Dynamisation complète du catalogue des services avec filtres par département.
+  - Maven compile : `mvnw.cmd test-compile` -> BUILD SUCCESS (0 erreurs).
+  - TypeScript : `npx tsc --noEmit` -> 0 erreurs.
+- **Résultat :** Étape 2 terminée et validée ✅

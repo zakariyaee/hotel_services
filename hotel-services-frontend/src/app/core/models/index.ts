@@ -10,3 +10,7 @@ export * from './reservation.model';
 export * from './demande.model';
 export * from './affectation.model';
 export * from './notification.model';
+export * from './login-request.model';
+export * from './login-response.model';
+export * from './guest-access-request.model';
+export * from './guest-access-response.model';

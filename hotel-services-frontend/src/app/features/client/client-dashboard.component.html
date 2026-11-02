@@ -70,7 +70,7 @@
               <div class="panel-user-header">
                 <strong>{{ userDisplayName }}</strong>
                 <small>{{ currentUser()?.email }}</small>
-                <div class="room-tag">Chambre 412 · Séjour VIP</div>
+                <div class="room-tag">Chambre {{ roomNumber }} · {{ roomType }}</div>
               </div>
               <div class="panel-divider"></div>
               <button type="button" class="panel-action logout-action" (click)="logout()">
@@ -105,7 +105,7 @@
       <!-- HERO BANNER -->
       <section class="hero-banner">
         <div class="hero-main-col">
-          <span class="hero-badge">CHAMBRE 412 · SÉJOUR JUSQU'AU 18 JUIN</span>
+          <span class="hero-badge">{{ stayBadgeText }}</span>
           <h1 class="hero-title">Bonjour, {{ clientFirstName }}.</h1>
           <p class="hero-sub">Que pouvons-nous faire pour vous aujourd'hui ?</p>
         </div>

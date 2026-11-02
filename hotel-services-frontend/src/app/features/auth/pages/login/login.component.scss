@@ -1,9 +1,286 @@
-.login-page { min-height:100vh; display:grid; grid-template-columns:1.08fr .92fr; background:var(--paper); }
-.login-visual { min-height:680px; padding:42px 54px; color:white; display:flex; flex-direction:column; justify-content:space-between; background:linear-gradient(180deg,rgba(18,45,38,.08),rgba(18,45,38,.82)),url('https://images.unsplash.com/photo-1731336478850-6bce7235e320?auto=format&fit=crop&w=1600&q=80') center/cover; }
-.brand { display:flex; align-items:center; gap:9px; color:var(--forest); font:600 14px/1 'Manrope',sans-serif; letter-spacing:.14em; white-space:nowrap; } .brand strong { font-weight:800; } .brand-light { color:white; } .brand-mark { width:29px; height:29px; border:1.5px solid currentColor; border-radius:50%; display:grid; place-items:center; font-size:22px; transform:rotate(-12deg); }
-.visual-copy { max-width:650px; margin-bottom:40px; } .visual-copy h1 { max-width:680px; margin:8px 0; font:700 clamp(37px,4.2vw,62px)/1.04 'Manrope',sans-serif; letter-spacing:-.035em; } .visual-copy p { color:#e5e9e7; font-size:16px; }
-.eyebrow { display:block; margin-bottom:8px; color:var(--gold); font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; } .eyebrow-light { color:#e2d0aa; }
-.login-panel { display:grid; place-items:center; padding:50px; } .login-form { width:min(410px,100%); } .login-form>.brand { margin-bottom:72px; } .login-form h1 { margin:0 0 8px; font:700 32px/1.18 'Manrope',sans-serif; letter-spacing:-.035em; } .muted { color:var(--muted); font-size:14px; margin:0 0 30px; }
-.field { display:block; margin:18px 0; } .field span { display:block; margin-bottom:8px; font-size:12px; font-weight:700; } .field input { width:100%; height:51px; padding:0 15px; border:1px solid #d9ddd9; border-radius:10px; outline:0; background:white; } .field input:focus { border-color:var(--forest); box-shadow:0 0 0 3px #dfeae5; }
-.primary-button { width:100%; min-height:43px; border:0; border-radius:10px; background:var(--forest); color:white; font-weight:700; cursor:pointer; } .primary-button:disabled { opacity:.65; cursor:wait; } .error-message { margin:8px 0 14px; color:#b9564f; font-size:12px; } .secure-note,.help-copy { text-align:center; color:var(--muted); font-size:10px; } .help-copy { font-size:11px; } .help-copy button { border:0; background:none; color:var(--forest); font-size:11px; font-weight:700; cursor:pointer; }
-@media (max-width:700px) { .login-page { display:block; background:linear-gradient(to bottom,transparent 0,var(--paper) 210px),url('https://images.unsplash.com/photo-1731336478850-6bce7235e320?auto=format&fit=crop&w=900&q=80') center top/100% 270px no-repeat; padding-top:145px; } .login-visual { display:none; } .login-panel { display:block; padding:32px 24px; border-radius:24px 24px 0 0; background:var(--paper); min-height:calc(100vh - 145px); } .login-form { margin:0 auto; } .login-form>.brand { display:none; } .login-form h1 { font-size:28px; } }
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  background: var(--paper, #f7f6f2);
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.login-visual {
+  min-height: 680px;
+  padding: 48px 56px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(180deg, rgba(18, 45, 38, 0.25), rgba(18, 45, 38, 0.88)),
+    url('https://images.unsplash.com/photo-1731336478850-6bce7235e320?auto=format&fit=crop&w=1600&q=80') center/cover;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #122d26;
+  font: 600 14px/1 'Manrope', sans-serif;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+
+  strong {
+    font-weight: 800;
+  }
+
+  &.brand-light {
+    color: white;
+  }
+}
+
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  transform: rotate(-12deg);
+}
+
+.visual-copy {
+  max-width: 620px;
+  margin-bottom: 40px;
+
+  h1 {
+    max-width: 680px;
+    margin: 12px 0;
+    font: 700 clamp(34px, 4vw, 56px)/1.08 'Manrope', sans-serif;
+    letter-spacing: -0.035em;
+  }
+
+  p {
+    color: #e5e9e7;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: #bfa15f;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+
+  &.eyebrow-light {
+    color: #e2d0aa;
+  }
+}
+
+.login-panel {
+  display: grid;
+  place-items: center;
+  padding: 40px 30px;
+}
+
+.login-form {
+  width: min(430px, 100%);
+
+  > .brand {
+    margin-bottom: 40px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font: 700 30px/1.18 'Manrope', sans-serif;
+    letter-spacing: -0.03em;
+    color: #122d26;
+  }
+
+  .muted {
+    color: #6c736e;
+    font-size: 14px;
+    margin: 0 0 24px;
+    line-height: 1.45;
+  }
+}
+
+/* Onglets d'authentification */
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: #e9ece8;
+  padding: 5px;
+  border-radius: 12px;
+  margin-bottom: 28px;
+}
+
+.tab-btn {
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  font: 600 13px/1 'Manrope', sans-serif;
+  color: #55605b;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #122d26;
+  }
+
+  &.active {
+    background: white;
+    color: #122d26;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.tab-content {
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.field {
+  display: block;
+  margin: 16px 0;
+
+  span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2b332f;
+  }
+
+  input {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    border: 1px solid #d2d8d3;
+    border-radius: 10px;
+    outline: none;
+    background: white;
+    font-size: 14px;
+    color: #122d26;
+    transition: all 0.15s ease;
+
+    &:focus {
+      border-color: #122d26;
+      box-shadow: 0 0 0 3px rgba(18, 45, 38, 0.12);
+    }
+  }
+}
+
+.demo-hints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 18px;
+
+  .hint-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #7b837e;
+  }
+
+  .demo-chip {
+    border: 1px solid #d5ded8;
+    background: #f2f5f3;
+    color: #1e3d34;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: #122d26;
+      color: white;
+      border-color: #122d26;
+    }
+  }
+}
+
+.primary-button {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 10px;
+  background: #122d26;
+  color: white;
+  font: 700 14px/1 'Manrope', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+
+  &:hover:not(:disabled) {
+    background: #1c453a;
+    box-shadow: 0 4px 12px rgba(18, 45, 38, 0.25);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+}
+
+.error-message {
+  margin: 10px 0 14px;
+  padding: 10px 14px;
+  background: #fdf2f2;
+  border-left: 3px solid #b9564f;
+  border-radius: 6px;
+  color: #b9564f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.secure-note {
+  text-align: center;
+  color: #838c86;
+  font-size: 11px;
+  margin-top: 24px;
+}
+
+@media (max-width: 820px) {
+  .login-page {
+    display: block;
+    background: linear-gradient(to bottom, transparent 0, #f7f6f2 230px),
+      url('https://images.unsplash.com/photo-1731336478850-6bce7235e320?auto=format&fit=crop&w=900&q=80') center top / 100% 280px no-repeat;
+    padding-top: 160px;
+  }
+
+  .login-visual {
+    display: none;
+  }
+
+  .login-panel {
+    display: block;
+    padding: 36px 24px;
+    border-radius: 28px 28px 0 0;
+    background: #f7f6f2;
+    min-height: calc(100vh - 160px);
+  }
+
+  .login-form {
+    margin: 0 auto;
+
+    > .brand {
+      display: none;
+    }
+
+    h1 {
+      font-size: 26px;
+    }
+  }
+}

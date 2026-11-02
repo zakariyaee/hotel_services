@@ -35,6 +35,15 @@ public class JwtUtil {
         return buildToken(extraClaims, userDetails.getUsername());
     }
 
+    public String generateGuestToken(UserDetails userDetails, Long userId, Long reservationId, String numChambre) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("userId", userId);
+        extraClaims.put("role", "CLIENT");
+        extraClaims.put("reservationId", reservationId);
+        extraClaims.put("numChambre", numChambre);
+        return buildToken(extraClaims, userDetails.getUsername());
+    }
+
     private String buildToken(Map<String, Object> extraClaims, String subject) {
         return Jwts.builder()
                 .claims(extraClaims)
@@ -62,6 +71,14 @@ public class JwtUtil {
         return extractClaim(token, claims -> claims.get("role", String.class));
     }
 
+    public Long extractReservationId(String token) {
+        return extractClaim(token, claims -> claims.get("reservationId", Long.class));
+    }
+
+    public String extractNumChambre(String token) {
+        return extractClaim(token, claims -> claims.get("numChambre", String.class));
+    }
+
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
@@ -83,4 +100,3 @@ public class JwtUtil {
                 .getPayload();
     }
 }
-
