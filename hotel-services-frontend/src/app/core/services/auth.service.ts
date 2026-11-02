@@ -8,20 +8,16 @@ import { LoginRequest } from '../models/login-request.model';
 export class AuthService {
   private readonly apiUrl = 'http://localhost:8090/api/auth';
   private readonly storageKey = 'hotel_services_user';
+  private readonly tokenKey = 'hotel_services_token';
 
-  private getInitialUser(): LoginResponse {
+  private getInitialUser(): LoginResponse | null {
     try {
       const stored = localStorage.getItem(this.storageKey);
       if (stored) return JSON.parse(stored);
-    } catch (e) {
+    } catch {
       // Ignore storage errors
     }
-    // Default client (Camille / Zakaria id 1)
-    return {
-      idUtilisateur: 1,
-      email: 'camille@hotel.com',
-      role: 'CLIENT',
-    };
+    return null;
   }
 
   readonly currentUser = signal<LoginResponse | null>(this.getInitialUser());
@@ -36,7 +32,10 @@ export class AuthService {
           this.currentUser.set(user);
           try {
             localStorage.setItem(this.storageKey, JSON.stringify(user));
-          } catch (e) {}
+            localStorage.setItem(this.tokenKey, user.token);
+          } catch {
+            // Ignore storage errors
+          }
         })
       );
   }
@@ -45,7 +44,29 @@ export class AuthService {
     this.currentUser.set(null);
     try {
       localStorage.removeItem(this.storageKey);
-    } catch (e) {}
+      localStorage.removeItem(this.tokenKey);
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  isLoggedIn(): boolean {
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      // Decode payload (base64) to check expiration
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 > Date.now();
+    } catch {
+      return false;
+    }
+  }
+
+  getRole(): string | null {
+    return this.currentUser()?.role ?? null;
   }
 }
-

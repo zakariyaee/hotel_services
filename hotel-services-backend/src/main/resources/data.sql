@@ -1,5 +1,9 @@
 -- ========================================================
 -- DONNEES DE TEST POUR HOTEL-SERVICES
+-- Mots de passe hashés BCrypt :
+--   client123  → $2a$10$3ENNNUmfoOgRb86KQ/Ekc.fae2juemCTFbJblp9K/T9rfUtyFph2y
+--   staff123   → $2a$10$OP1PWFykuvQk5/f6Ypo8c.wRXELr0KoQNboHfFRwn9V1kd9xIEOUK
+--   admin123   → $2a$10$pf6wjVAzogvAX1VcsGHdXORtQ7Fv8Rf/V51BhBCj9OTRoeSY5sKp6
 -- ========================================================
 
 -- Departements
@@ -27,13 +31,18 @@ INSERT IGNORE INTO chambre (id_chambre, num_chambre, type_chambre, etage, capaci
 (4, '202', 'Chambre Exécutive', 2, 2, 'DISPONIBLE'),
 (5, '301', 'Penthouse Panoramique', 3, 4, 'MAINTENANCE');
 
--- Utilisateurs avec héritage JOINED
+-- Utilisateurs
 INSERT IGNORE INTO utilisateur (id_utilisateur, nom, prenom, email, mot_de_passe, tel, role) VALUES
-(1, 'Allouch', 'Zakaria', 'zakaria@hotel.com', 'client123', '+33611223344', 'CLIENT'),
-(2, 'Dupont', 'Claire', 'claire.reception@hotel.com', 'staff123', '+33622334455', 'STAFF'),
-(3, 'Moreau', 'Lucas', 'lucas.agent@hotel.com', 'staff123', '+33633445566', 'STAFF'),
-(4, 'Benali', 'Yasmine', 'yasmine.agent@hotel.com', 'staff123', '+33644556677', 'STAFF'),
-(5, 'Admin', 'Hotel', 'admin@hotel.com', 'admin123', '+33600000000', 'ADMIN');
+(1, 'Allouch', 'Zakaria', 'zakaria@hotel.com', '$2a$10$3ENNNUmfoOgRb86KQ/Ekc.fae2juemCTFbJblp9K/T9rfUtyFph2y', '+33611223344', 'CLIENT'),
+(2, 'Dupont', 'Claire', 'claire.reception@hotel.com', '$2a$10$OP1PWFykuvQk5/f6Ypo8c.wRXELr0KoQNboHfFRwn9V1kd9xIEOUK', '+33622334455', 'STAFF'),
+(3, 'Moreau', 'Lucas', 'lucas.agent@hotel.com', '$2a$10$OP1PWFykuvQk5/f6Ypo8c.wRXELr0KoQNboHfFRwn9V1kd9xIEOUK', '+33633445566', 'STAFF'),
+(4, 'Benali', 'Yasmine', 'yasmine.agent@hotel.com', '$2a$10$OP1PWFykuvQk5/f6Ypo8c.wRXELr0KoQNboHfFRwn9V1kd9xIEOUK', '+33644556677', 'STAFF'),
+(5, 'Admin', 'Hotel', 'admin@hotel.com', '$2a$10$pf6wjVAzogvAX1VcsGHdXORtQ7Fv8Rf/V51BhBCj9OTRoeSY5sKp6', '+33600000000', 'ADMIN');
+
+-- Mise à jour garantie des mots de passe (au cas où les lignes existaient déjà dans MySQL)
+UPDATE utilisateur SET mot_de_passe = '$2a$10$3ENNNUmfoOgRb86KQ/Ekc.fae2juemCTFbJblp9K/T9rfUtyFph2y' WHERE email = 'zakaria@hotel.com';
+UPDATE utilisateur SET mot_de_passe = '$2a$10$OP1PWFykuvQk5/f6Ypo8c.wRXELr0KoQNboHfFRwn9V1kd9xIEOUK' WHERE email IN ('claire.reception@hotel.com', 'lucas.agent@hotel.com', 'yasmine.agent@hotel.com');
+UPDATE utilisateur SET mot_de_passe = '$2a$10$pf6wjVAzogvAX1VcsGHdXORtQ7Fv8Rf/V51BhBCj9OTRoeSY5sKp6' WHERE email = 'admin@hotel.com';
 
 -- Client (id_utilisateur = 1)
 INSERT IGNORE INTO client (id_utilisateur, reservation_statut, langue_preferee, preference_notification) VALUES
@@ -56,7 +65,7 @@ INSERT IGNORE INTO agent (id_utilisateur, disponible) VALUES
 
 -- Réservation pour le client 1 dans la chambre 3 (Suite Royale Prestige)
 INSERT IGNORE INTO reservation (id_reservation, date_debut, date_fin, statut, type_reservation, id_chambre, id_client) VALUES
-(1, '2026-10-10', '2026-10-20', 'EN_COURS', 'SEJOUR_PRESTIGE', 3, 1);
+(1, '2026-10-10', '2026-11-30', 'EN_COURS', 'SEJOUR_PRESTIGE', 3, 1);
 
 -- Demandes initiales
 INSERT IGNORE INTO demande (id_demande, reference_demande, date_creation, priorite, statut, temps_traitement_estime, id_client, id_service, id_receptionniste) VALUES

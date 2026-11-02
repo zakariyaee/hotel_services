@@ -10,7 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/departements")
-@CrossOrigin(origins = "http://localhost:4200")
 public class DepartementController {
 
     private final DepartementService service;
@@ -45,3 +44,4 @@ public class DepartementController {
         service.delete(id);
     }
 }
+

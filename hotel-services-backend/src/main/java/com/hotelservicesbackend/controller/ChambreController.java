@@ -10,7 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/chambres")
-@CrossOrigin(origins = "http://localhost:4200")
 public class ChambreController {
 
     private final ChambreRepository chambreRepository;
@@ -37,3 +36,4 @@ public class ChambreController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 }
+

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+﻿import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -269,7 +269,8 @@ export class ClientDashboardComponent implements OnInit {
 
   refreshDemandes(): void {
     const user = this.currentUser();
-    const clientId = user?.idUtilisateur || 1;
+    if (!user) return;`r`
+       const clientId = user.idUtilisateur;
 
     this.demandeService.getByClient(clientId).subscribe({
       next: (demandesList) => {
@@ -355,7 +356,9 @@ export class ClientDashboardComponent implements OnInit {
 
     const refNum = Math.floor(1000 + Math.random() * 9000);
     const reference = `DEM-${new Date().getFullYear()}-${refNum}`;
-    const clientId = this.currentUser()?.idUtilisateur || 1;
+    const user = this.currentUser();`r`
+        if (!user) { this.isSubmitting.set(false); return; }`r`
+          const clientId = user.idUtilisateur;
     const serviceId = this.selectedServiceCard.backendId || 1;
 
     let delayMinutes = this.selectedServiceCard.defaultMinutes;
@@ -483,3 +486,5 @@ export class ClientDashboardComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 }
+
+

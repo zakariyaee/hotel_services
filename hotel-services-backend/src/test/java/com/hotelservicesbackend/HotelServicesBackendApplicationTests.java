@@ -1,13 +1,16 @@
 package com.hotelservicesbackend;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class HotelServicesBackendApplicationTests {
 
     @Test
-    void contextLoads() {
+    void testPasswordEncoding() {
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        String hash = encoder.encode("client123");
+        assertTrue(encoder.matches("client123", hash));
     }
-
 }

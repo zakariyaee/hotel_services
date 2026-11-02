@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/utilisateurs")
-@CrossOrigin(origins = "http://localhost:4200")
 public class UtilisateurController {
     private final UtilisateurService service;
 
@@ -20,3 +19,4 @@ public class UtilisateurController {
         return service.create(request);
     }
 }
+
