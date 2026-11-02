@@ -27,3 +27,4 @@ export interface CreateReservationDto {
   dateFin: string;
   typeReservation?: string;
 }
+

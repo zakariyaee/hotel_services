@@ -20,3 +20,4 @@ public record AdminReservationResponse(
         String qrCodeBase64,
         String loginUrl
 ) {}
+
