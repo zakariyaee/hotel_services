@@ -28,9 +28,22 @@ public class Service {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(length = 100)
+    private String categorie;
+
     private int dureeEstimee;
 
-    private boolean disponibilite;
+    private Double prixIndicatif;
+
+    private boolean disponibilite = true;
+
+    /**
+     * Règle métier :
+     * true  = Nécessite obligatoirement une affectation manuelle par le superviseur (Personnel)
+     * false = Tâche directe que tout employé du département peut s'auto-attribuer directement
+     */
+    @Column(nullable = false)
+    private boolean necessiteSupervision = false;
 
     @Column(length = 500)
     private String imageUrl;

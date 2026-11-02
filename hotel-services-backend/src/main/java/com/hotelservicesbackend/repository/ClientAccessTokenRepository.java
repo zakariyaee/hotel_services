@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ClientAccessTokenRepository extends JpaRepository<ClientAccessToken, Long> {
     Optional<ClientAccessToken> findByTokenHash(String tokenHash);
+    Optional<ClientAccessToken> findTopByReservation_IdReservationOrderByDateCreationDesc(Long idReservation);
 }

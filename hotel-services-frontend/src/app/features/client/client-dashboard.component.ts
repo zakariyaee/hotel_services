@@ -197,6 +197,18 @@ export class ClientDashboardComponent implements OnInit {
     return 'Camille';
   }
 
+  get roomNumber(): string {
+    return '204';
+  }
+
+  get roomType(): string {
+    return 'Suite Prestige';
+  }
+
+  get stayBadgeText(): string {
+    return 'SÉJOUR EN COURS · 5 ÉTOILES';
+  }
+
   get userInitials(): string {
     const email = this.currentUser()?.email;
     if (email) {

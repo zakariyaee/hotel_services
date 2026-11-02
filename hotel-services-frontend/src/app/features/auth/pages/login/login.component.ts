@@ -1,7 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
@@ -11,64 +11,46 @@ import { AuthService } from '../../../../core/services/auth.service';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
-export class LoginComponent {
-  // Tabs: 'guest' (Code séjour) ou 'staff' (Personnel & Direction)
-  activeTab: 'guest' | 'staff' = 'guest';
-
-  // Guest access state
-  accessCode = 'RES-2026-001';
-
-  // Staff login state
+export class LoginComponent implements OnInit {
   email = '';
   motDePasse = '';
 
   readonly errorMessage = signal('');
   readonly isLoading = signal(false);
+  readonly isAutoLogin = signal(false);
 
-  constructor(private authService: AuthService, private router: Router) {
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {
     if (this.authService.isLoggedIn()) {
       const role = this.authService.getRole();
       this.router.navigate([this.routeForRole(role ?? '')]);
     }
   }
 
-  setTab(tab: 'guest' | 'staff'): void {
-    this.activeTab = tab;
-    this.errorMessage.set('');
-  }
+  ngOnInit(): void {
+    // Détection automatique du scan QR Code (paramètres email & code dans l'URL)
+    this.route.queryParamMap.subscribe(params => {
+      const emailParam = params.get('email');
+      const codeParam = params.get('code');
+      const autoParam = params.get('auto');
 
-  fillGuestDemo(code: string): void {
-    this.accessCode = code;
-  }
+      if (emailParam && codeParam) {
+        this.email = emailParam;
+        this.motDePasse = codeParam;
 
-  fillStaffDemo(email: string, pass: string): void {
-    this.email = email;
-    this.motDePasse = pass;
-  }
-
-  loginGuest(): void {
-    this.errorMessage.set('');
-    const code = this.accessCode.trim();
-    if (!code) {
-      this.errorMessage.set('Veuillez saisir votre code de réservation ou pass séjour.');
-      return;
-    }
-
-    this.isLoading.set(true);
-    this.authService.guestLogin(code).subscribe({
-      next: () => {
-        this.isLoading.set(false);
-        this.router.navigate(['/client']);
-      },
-      error: err => {
-        this.isLoading.set(false);
-        const msg = err.error?.message ?? "Code d'accès invalide ou réservation non active.";
-        this.errorMessage.set(msg);
-      },
+        if (autoParam === 'true') {
+          this.isAutoLogin.set(true);
+          // Auto-connexion immédiate lors du scan QR Code
+          this.login();
+        }
+      }
     });
   }
 
-  loginStaff(): void {
+  login(): void {
     this.errorMessage.set('');
     if (!this.email.trim() || !this.motDePasse.trim()) {
       this.errorMessage.set('Veuillez renseigner votre email et mot de passe.');
@@ -76,17 +58,25 @@ export class LoginComponent {
     }
 
     this.isLoading.set(true);
-    this.authService.login({ email: this.email, motDePasse: this.motDePasse }).subscribe({
+    this.authService.login({ email: this.email.trim(), motDePasse: this.motDePasse.trim() }).subscribe({
       next: user => {
         this.isLoading.set(false);
+        this.isAutoLogin.set(false);
         this.router.navigate([this.routeForRole(user.role)]);
       },
       error: err => {
         this.isLoading.set(false);
+        this.isAutoLogin.set(false);
         const msg = err.error?.message ?? 'Identifiant ou mot de passe incorrect.';
         this.errorMessage.set(msg);
       },
     });
+  }
+
+  fillDemo(email: string, pass: string): void {
+    this.email = email;
+    this.motDePasse = pass;
+    this.errorMessage.set('');
   }
 
   private routeForRole(role: string): string {

@@ -1,30 +1,460 @@
-<section class="admin-crud">
-  <div class="page-intro"><span class="section-tag">ADMINISTRATION</span><h1>Gestion de l’hôtel</h1><p>CRUD des services et des départements.</p></div>
-  @if (message()) { <p class="feedback">{{ message() }}</p> }
+<section class="admin-dashboard">
+  <!-- Header Page -->
+  <header class="page-intro">
+    <div>
+      <span class="section-tag">PANNEAU D'ADMINISTRATION</span>
+      <h1>Gestion Hôtelière & Réservations</h1>
+      <p class="subtitle">Supervisez les séjours clients, délivrez les pass QR Code d'accès direct et configurez les services.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openCreateReservationModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Nouvelle Réservation & Pass
+      </button>
+    </div>
+  </header>
 
-  <div class="crud-grid">
-    <article class="card">
-      <h2>{{ serviceId === null ? 'Ajouter un service' : 'Modifier le service' }}</h2>
-      <form (ngSubmit)="saveService()">
-        <input name="serviceNom" placeholder="Nom" [(ngModel)]="serviceForm.nom" required>
-        <textarea name="serviceDescription" placeholder="Description" [(ngModel)]="serviceForm.description"></textarea>
-        <input name="serviceDuree" type="number" min="1" placeholder="Durée (minutes)" [(ngModel)]="serviceForm.dureeEstimee">
-        <input name="serviceImage" placeholder="URL de l’image" [(ngModel)]="serviceForm.imageUrl">
-        <label><input name="serviceDisponibilite" type="checkbox" [(ngModel)]="serviceForm.disponibilite"> Disponible</label>
-        <div class="actions"><button type="submit">Enregistrer</button>@if (serviceId !== null) { <button type="button" class="secondary" (click)="cancelService()">Annuler</button> }</div>
-      </form>
-      <div class="list">@for (service of services(); track service.idService) { <div class="row"><span><strong>{{ service.nom }}</strong><small>{{ service.dureeEstimee }} min · {{ service.disponibilite ? 'Disponible' : 'Indisponible' }}</small></span><span class="actions"><button type="button" (click)="editService(service)">Modifier</button><button type="button" class="danger" (click)="deleteService(service.idService!)">Supprimer</button></span></div> }</div>
-    </article>
+  <!-- Feedback alert -->
+  @if (message()) {
+    <div class="feedback-banner">
+      <span>{{ message() }}</span>
+      <button class="close-btn" (click)="message.set('')">&times;</button>
+    </div>
+  }
 
-    <article class="card">
-      <h2>{{ departementId === null ? 'Ajouter un département' : 'Modifier le département' }}</h2>
-      <form (ngSubmit)="saveDepartement()">
-        <input name="departementNom" placeholder="Nom" [(ngModel)]="departementForm.nom" required>
-        <textarea name="departementDescription" placeholder="Description" [(ngModel)]="departementForm.description"></textarea>
-        <input name="departementHoraires" placeholder="Horaires d’ouverture" [(ngModel)]="departementForm.horairesOuverture">
-        <div class="actions"><button type="submit">Enregistrer</button>@if (departementId !== null) { <button type="button" class="secondary" (click)="cancelDepartement()">Annuler</button> }</div>
-      </form>
-      <div class="list">@for (departement of departements(); track departement.idDepartement) { <div class="row"><span><strong>{{ departement.nom }}</strong><small>{{ departement.horairesOuverture || 'Horaires non définis' }}</small></span><span class="actions"><button type="button" (click)="editDepartement(departement)">Modifier</button><button type="button" class="danger" (click)="deleteDepartement(departement.idDepartement!)">Supprimer</button></span></div> }</div>
-    </article>
-  </div>
+  <!-- Navigation Tabs -->
+  <nav class="admin-tabs" role="tablist">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'reservations'"
+      (click)="setTab('reservations')">
+      <span>Réservations & Pass QR Code</span>
+      <span class="badge">{{ reservations().length }}</span>
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'services'"
+      (click)="setTab('services')">
+      <span>Services & Supervision</span>
+      <span class="badge">{{ services().length }}</span>
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'departements'"
+      (click)="setTab('departements')">
+      <span>Départements</span>
+      <span class="badge">{{ departements().length }}</span>
+    </button>
+  </nav>
+
+  <!-- TAB 1: RESERVATIONS & QR PASS -->
+  @if (activeTab === 'reservations') {
+    <div class="tab-content reservations-view">
+      <div class="content-toolbar">
+        <div>
+          <h2>Séjours & Pass Numériques</h2>
+          <p class="section-desc">Chaque réservation génère un identifiant séjour, un code d'accès sécurisé et un QR Code d'auto-authentification.</p>
+        </div>
+        <button class="btn btn-secondary" (click)="reloadReservations()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Actualiser
+        </button>
+      </div>
+
+      @if (reservations().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">🏨</div>
+          <h3>Aucune réservation enregistrée</h3>
+          <p>Créez la première réservation client pour délivrer automatiquement son pass d'accès et son QR Code.</p>
+          <button class="btn btn-primary" (click)="openCreateReservationModal()">Créer une réservation</button>
+        </div>
+      } @else {
+        <div class="table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Chambre</th>
+                <th>Client</th>
+                <th>Période du Séjour</th>
+                <th>Statut</th>
+                <th>Code d'Accès</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (res of reservations(); track res.idReservation) {
+                <tr>
+                  <td>
+                    <div class="room-cell">
+                      <span class="room-number">Chambre {{ res.numChambre || res.idChambre }}</span>
+                      <small class="room-type">{{ res.typeChambre || 'Chambre Standard' }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="client-cell">
+                      <strong>{{ res.clientPrenom }} {{ res.clientNom }}</strong>
+                      <span class="email-sub">{{ res.clientEmail }}</span>
+                      @if (res.clientTel) { <small class="tel-sub">{{ res.clientTel }}</small> }
+                    </div>
+                  </td>
+                  <td>
+                    <div class="date-cell">
+                      <span>Du {{ res.dateDebut }}</span>
+                      <small>Au {{ res.dateFin }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-pill" [class.active-stay]="res.statut === 'EN_COURS' || res.statut === 'CONFIRMEE'">
+                      {{ res.statut || 'EN_COURS' }}
+                    </span>
+                  </td>
+                  <td>
+                    <code class="code-badge">{{ res.accessCode || 'RES-EN-COURS' }}</code>
+                  </td>
+                  <td class="text-right">
+                    <button class="btn btn-sm btn-gold" (click)="openPassModal(res)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/></svg>
+                      Pass QR Code
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 2: SERVICES & SUPERVISION -->
+  @if (activeTab === 'services') {
+    <div class="tab-content services-view">
+      <div class="crud-grid">
+        <!-- Formulaire Service -->
+        <article class="card form-card">
+          <div class="card-header">
+            <h3>{{ serviceId === null ? 'Ajouter un service' : 'Modifier le service' }}</h3>
+            <p>Définissez les règles d'assignation : directes par l'employé ou supervisées.</p>
+          </div>
+          <form (ngSubmit)="saveService()" class="styled-form">
+            <div class="form-group">
+              <label>Nom du service</label>
+              <input name="serviceNom" placeholder="Ex: Panier Petit-Déjeuner Continental" [(ngModel)]="serviceForm.nom" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Département</label>
+                <select name="serviceDept" [(ngModel)]="serviceForm.idDepartement">
+                  @for (dept of departements(); track dept.idDepartement) {
+                    <option [value]="dept.idDepartement">{{ dept.nom }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Catégorie</label>
+                <input name="serviceCat" placeholder="Ex: Room Service, Bien-être" [(ngModel)]="serviceForm.categorie">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Durée estimée (min)</label>
+                <input name="serviceDuree" type="number" min="1" [(ngModel)]="serviceForm.dureeEstimee">
+              </div>
+              <div class="form-group">
+                <label>Prix indicatif (€)</label>
+                <input name="servicePrix" type="number" min="0" step="0.5" [(ngModel)]="serviceForm.prixIndicatif">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Description</label>
+              <textarea name="serviceDescription" placeholder="Détails du service pour le client..." [(ngModel)]="serviceForm.description"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>URL de l'image (optionnelle)</label>
+              <input name="serviceImage" placeholder="https://..." [(ngModel)]="serviceForm.imageUrl">
+            </div>
+
+            <!-- Configuration Supervision / Auto-assignation -->
+            <div class="supervision-box">
+              <label class="checkbox-container">
+                <input name="serviceSupervision" type="checkbox" [(ngModel)]="serviceForm.necessiteSupervision">
+                <span class="checkmark"></span>
+                <span class="label-text">
+                  <strong>Nécessite la validation d'un superviseur / personnel</strong>
+                  <small>Si coché, la demande arrive d'abord au superviseur du département pour affectation. Sinon, l'employé peut se l'auto-assigner directement.</small>
+                </span>
+              </label>
+            </div>
+
+            <label class="checkbox-container simple">
+              <input name="serviceDisponibilite" type="checkbox" [(ngModel)]="serviceForm.disponibilite">
+              <span class="checkmark"></span>
+              <span>Actif et disponible à la commande</span>
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Enregistrer le service</button>
+              @if (serviceId !== null) {
+                <button type="button" class="btn btn-secondary" (click)="cancelService()">Annuler</button>
+              }
+            </div>
+          </form>
+        </article>
+
+        <!-- Liste des Services -->
+        <article class="card list-card">
+          <div class="card-header">
+            <h3>Catalogue des services ({{ services().length }})</h3>
+          </div>
+          <div class="services-list">
+            @for (service of services(); track service.idService) {
+              <div class="service-item">
+                <div class="service-main">
+                  <div class="service-title-row">
+                    <strong>{{ service.nom }}</strong>
+                    @if (service.prixIndicatif && service.prixIndicatif > 0) {
+                      <span class="price-tag">{{ service.prixIndicatif }} €</span>
+                    } @else {
+                      <span class="price-free">Inclus</span>
+                    }
+                  </div>
+                  <p class="service-desc">{{ service.description }}</p>
+                  <div class="service-tags">
+                    <span class="tag-meta">{{ service.dureeEstimee }} min</span>
+                    <span class="tag-meta">{{ service.departement?.nom || 'Département' }}</span>
+                    @if (service.necessiteSupervision) {
+                      <span class="badge-supervision warning">Supervision requise</span>
+                    } @else {
+                      <span class="badge-supervision success">Auto-assignation direct employé</span>
+                    }
+                  </div>
+                </div>
+                <div class="service-actions">
+                  <button type="button" class="btn btn-sm btn-outline" (click)="editService(service)">Modifier</button>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="deleteService(service.idService!)">Supprimer</button>
+                </div>
+              </div>
+            }
+          </div>
+        </article>
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: DEPARTEMENTS -->
+  @if (activeTab === 'departements') {
+    <div class="tab-content departements-view">
+      <div class="crud-grid">
+        <article class="card form-card">
+          <div class="card-header">
+            <h3>{{ departementId === null ? 'Ajouter un département' : 'Modifier le département' }}</h3>
+          </div>
+          <form (ngSubmit)="saveDepartement()" class="styled-form">
+            <div class="form-group">
+              <label>Nom du département</label>
+              <input name="departementNom" placeholder="Ex: Housekeeping, Conciergerie, Restauration" [(ngModel)]="departementForm.nom" required>
+            </div>
+            <div class="form-group">
+              <label>Horaires d'ouverture</label>
+              <input name="departementHoraires" placeholder="Ex: 06:00 - 23:00 / 7j/7" [(ngModel)]="departementForm.horairesOuverture">
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea name="departementDescription" placeholder="Missions et responsabilités..." [(ngModel)]="departementForm.description"></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Enregistrer</button>
+              @if (departementId !== null) {
+                <button type="button" class="btn btn-secondary" (click)="cancelDepartement()">Annuler</button>
+              }
+            </div>
+          </form>
+        </article>
+
+        <article class="card list-card">
+          <div class="card-header">
+            <h3>Départements opérationnels ({{ departements().length }})</h3>
+          </div>
+          <div class="departements-list">
+            @for (dept of departements(); track dept.idDepartement) {
+              <div class="dept-item">
+                <div class="dept-main">
+                  <strong>{{ dept.nom }}</strong>
+                  <p>{{ dept.description || 'Aucune description' }}</p>
+                  <small>Horaires : {{ dept.horairesOuverture || '24h/24' }}</small>
+                </div>
+                <div class="dept-actions">
+                  <button type="button" class="btn btn-sm btn-outline" (click)="editDepartement(dept)">Modifier</button>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="deleteDepartement(dept.idDepartement!)">Supprimer</button>
+                </div>
+              </div>
+            }
+          </div>
+        </article>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: CREER UNE RESERVATION -->
+  @if (showCreateReservationModal) {
+    <div class="modal-backdrop" (click)="closeCreateReservationModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Nouvelle Réservation Client</h3>
+            <p>Enregistrez le client et attribuez une chambre. Le Pass QR Code et le mot de passe temporaire seront générés automatiquement.</p>
+          </div>
+          <button class="close-modal-btn" (click)="closeCreateReservationModal()">&times;</button>
+        </div>
+
+        <form (ngSubmit)="saveReservation()" class="styled-form">
+          <div class="form-section-title">Coordonnées du Client</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nom *</label>
+              <input name="resNom" [(ngModel)]="reservationForm.clientNom" placeholder="Ex: Benali" required>
+            </div>
+            <div class="form-group">
+              <label>Prénom *</label>
+              <input name="resPrenom" [(ngModel)]="reservationForm.clientPrenom" placeholder="Ex: Karim" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email client * (pour l'envoi du pass)</label>
+              <input name="resEmail" type="email" [(ngModel)]="reservationForm.clientEmail" placeholder="client@exemple.com" required>
+            </div>
+            <div class="form-group">
+              <label>Téléphone</label>
+              <input name="resTel" [(ngModel)]="reservationForm.clientTel" placeholder="+212 6 00 00 00 00">
+            </div>
+          </div>
+
+          <div class="form-section-title">Séjour & Chambre</div>
+          <div class="form-group">
+            <label>Attribution de la Chambre *</label>
+            <select name="resChambre" [(ngModel)]="reservationForm.idChambre" required>
+              @for (chambre of chambres(); track chambre.idChambre) {
+                <option [value]="chambre.idChambre">
+                  Chambre {{ chambre.numChambre }} — {{ chambre.typeChambre || 'Standard' }} (Étage {{ chambre.etage }}, Capacité : {{ chambre.capacite }} pers.)
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date d'arrivée *</label>
+              <input name="resDebut" type="date" [(ngModel)]="reservationForm.dateDebut" required>
+            </div>
+            <div class="form-group">
+              <label>Date de départ *</label>
+              <input name="resFin" type="date" [(ngModel)]="reservationForm.dateFin" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Type de séjour</label>
+            <input name="resType" [(ngModel)]="reservationForm.typeReservation" placeholder="Ex: Séjour Affaires, Séjour Détente">
+          </div>
+
+          <div class="info-alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <div>
+              <strong>Automatisation complète :</strong>
+              <p>Le système va créer le compte client, attribuer un code de séjour unique (ex: <code>RES-948210</code>), générer le QR Code de connexion automatique et envoyer les identifiants par email.</p>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeCreateReservationModal()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isLoading()">
+              @if (isLoading()) { Génération en cours... } @else { Générer la réservation & le Pass }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: PASS QR CODE & ACCES DIRECT -->
+  @if (showPassModal && selectedReservation) {
+    <div class="modal-backdrop" (click)="closePassModal()">
+      <div class="modal-card pass-modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <span class="pass-pretitle">PASS NUMÉRIQUE DU SÉJOUR</span>
+            <h3>{{ selectedReservation.clientPrenom }} {{ selectedReservation.clientNom }}</h3>
+          </div>
+          <button class="close-modal-btn" (click)="closePassModal()">&times;</button>
+        </div>
+
+        <div class="pass-printable-area" id="client-pass-card">
+          <!-- Carte de Luxe du Pass -->
+          <div class="luxury-pass">
+            <div class="pass-hotel-brand">
+              <span class="hotel-stars">★★★★★</span>
+              <h4>GRAND HÔTEL INTRA-SERVICES</h4>
+              <p>Clé numérique d'accès aux services en chambre</p>
+            </div>
+
+            <div class="pass-qr-wrapper">
+              @if (selectedReservation.qrCodeBase64) {
+                <img [src]="selectedReservation.qrCodeBase64" alt="QR Code d'accès client" class="pass-qr-img">
+              } @else {
+                <div class="qr-placeholder">Génération du QR Code...</div>
+              }
+              <div class="qr-hint">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span>Scannez pour vous connecter instantanément</span>
+              </div>
+            </div>
+
+            <div class="pass-details-grid">
+              <div class="pass-detail">
+                <span class="label">Chambre</span>
+                <span class="value room-highlight">N° {{ selectedReservation.numChambre || selectedReservation.idChambre }}</span>
+              </div>
+              <div class="pass-detail">
+                <span class="label">Période du Séjour</span>
+                <span class="value">{{ selectedReservation.dateDebut }} → {{ selectedReservation.dateFin }}</span>
+              </div>
+              <div class="pass-detail full-width">
+                <span class="label">Identifiant de connexion (Email)</span>
+                <span class="value email-value">{{ selectedReservation.clientEmail }}</span>
+              </div>
+              <div class="pass-detail full-width">
+                <span class="label">Code secret séjour (Mot de passe)</span>
+                <div class="code-box">
+                  <span class="code-text">{{ selectedReservation.accessCode }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="pass-footer-notice">
+              Présentez ce QR Code à la caméra de votre smartphone ou saisissez vos identifiants sur la page de connexion.
+            </div>
+          </div>
+        </div>
+
+        <!-- Boutons d'action pour le réceptionniste / admin -->
+        <div class="pass-modal-actions">
+          <button class="btn btn-primary" (click)="printPass()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimer le Pass
+          </button>
+          <button class="btn btn-secondary" (click)="copyLoginUrl()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            {{ copiedLink ? 'Lien copié dans le presse-papier !' : 'Copier le lien d\'accès direct' }}
+          </button>
+          <button class="btn btn-outline" (click)="closePassModal()">Fermer</button>
+        </div>
+      </div>
+    </div>
+  }
 </section>

@@ -12,110 +12,61 @@
     <div class="login-form">
       <div class="brand"><span class="brand-mark">⌁</span> MAISON <strong>ÉLAN</strong></div>
       
-      <!-- Onglets d'accès (Bimodal : Client vs Personnel) -->
-      <div class="auth-tabs" role="tablist">
-        <button 
-          type="button"
-          class="tab-btn" 
-          [class.active]="activeTab === 'guest'"
-          (click)="setTab('guest')">
-          🔑 Accès Séjour Client
+      <span class="eyebrow">Bienvenue</span>
+      <h1>Accédez à votre espace</h1>
+      <p class="muted">Saisissez votre email et mot de passe pour accéder à vos services.</p>
+
+      @if (isAutoLogin()) {
+        <div class="qr-auto-alert">
+          <span class="qr-icon">📱</span>
+          <div>
+            <strong>Pass QR Code détecté</strong>
+            <p>Connexion automatique en cours...</p>
+          </div>
+        </div>
+      }
+
+      <form (ngSubmit)="login()">
+        <label class="field">
+          <span>Adresse email</span>
+          <input 
+            [(ngModel)]="email" 
+            name="email" 
+            type="email" 
+            placeholder="votre.email@exemple.com" 
+            required 
+            autocomplete="email" />
+        </label>
+
+        <label class="field">
+          <span>Mot de passe</span>
+          <input 
+            [(ngModel)]="motDePasse" 
+            name="motDePasse" 
+            type="password" 
+            placeholder="••••••••" 
+            required 
+            autocomplete="current-password" />
+        </label>
+
+        @if (errorMessage()) { 
+          <p class="error-message">⚠️ {{ errorMessage() }}</p> 
+        }
+
+        <button class="primary-button" type="submit" [disabled]="isLoading()">
+          {{ isLoading() ? 'Vérification...' : 'Se connecter →' }}
         </button>
-        <button 
-          type="button"
-          class="tab-btn" 
-          [class.active]="activeTab === 'staff'"
-          (click)="setTab('staff')">
-          🛡️ Équipe & Personnel
-        </button>
+      </form>
+
+      <!-- Raccourcis discrets pour tester rapidement les différents comptes lors des démonstrations -->
+      <div class="demo-hints">
+        <span class="hint-label">Accès rapides démo :</span>
+        <button type="button" class="demo-chip" (click)="fillDemo('zakaria@hotel.com', 'client123')">Client (Zakaria)</button>
+        <button type="button" class="demo-chip" (click)="fillDemo('claire.reception@hotel.com', 'staff123')">Réception</button>
+        <button type="button" class="demo-chip" (click)="fillDemo('admin@hotel.com', 'admin123')">Admin</button>
       </div>
 
-      <!-- ONGLET 1 : Client avec Code Séjour -->
-      @if (activeTab === 'guest') {
-        <div class="tab-content">
-          <span class="eyebrow">Séjour en cours</span>
-          <h1>Bienvenue à l'hôtel</h1>
-          <p class="muted">Saisissez votre code temporaire de réservation pour accéder aux services de votre chambre.</p>
-
-          <form (ngSubmit)="loginGuest()">
-            <label class="field">
-              <span>Code de réservation ou pass séjour</span>
-              <input 
-                [(ngModel)]="accessCode" 
-                name="accessCode" 
-                type="text" 
-                placeholder="Ex: RES-2026-001 ou STAY-201" 
-                required 
-                autocomplete="off" />
-            </label>
-
-            <div class="demo-hints">
-              <span class="hint-label">Codes de test :</span>
-              <button type="button" class="demo-chip" (click)="fillGuestDemo('RES-2026-001')">RES-2026-001 (Suite 201)</button>
-              <button type="button" class="demo-chip" (click)="fillGuestDemo('STAY-201')">STAY-201</button>
-            </div>
-
-            @if (errorMessage()) { 
-              <p class="error-message">⚠️ {{ errorMessage() }}</p> 
-            }
-
-            <button class="primary-button" type="submit" [disabled]="isLoading()">
-              {{ isLoading() ? 'Vérification...' : 'Accéder à mes services →' }}
-            </button>
-          </form>
-
-          <p class="secure-note">✓ Accès temporaire actif uniquement pendant la durée de votre séjour.</p>
-        </div>
-      }
-
-      <!-- ONGLET 2 : Personnel & Direction -->
-      @if (activeTab === 'staff') {
-        <div class="tab-content">
-          <span class="eyebrow">Espace Opérationnel</span>
-          <h1>Portail Équipe</h1>
-          <p class="muted">Connectez-vous avec vos identifiants pour gérer les demandes et superviser les opérations.</p>
-
-          <form (ngSubmit)="loginStaff()">
-            <label class="field">
-              <span>Email professionnel</span>
-              <input 
-                [(ngModel)]="email" 
-                name="email" 
-                type="email" 
-                placeholder="nom@hotel.com" 
-                required />
-            </label>
-
-            <label class="field">
-              <span>Mot de passe</span>
-              <input 
-                [(ngModel)]="motDePasse" 
-                name="motDePasse" 
-                type="password" 
-                placeholder="••••••••" 
-                required />
-            </label>
-
-            <div class="demo-hints">
-              <span class="hint-label">Comptes test :</span>
-              <button type="button" class="demo-chip" (click)="fillStaffDemo('claire.reception@hotel.com', 'staff123')">Réception</button>
-              <button type="button" class="demo-chip" (click)="fillStaffDemo('lucas.agent@hotel.com', 'staff123')">Staff Room Service</button>
-              <button type="button" class="demo-chip" (click)="fillStaffDemo('admin@hotel.com', 'admin123')">Admin</button>
-            </div>
-
-            @if (errorMessage()) { 
-              <p class="error-message">⚠️ {{ errorMessage() }}</p> 
-            }
-
-            <button class="primary-button" type="submit" [disabled]="isLoading()">
-              {{ isLoading() ? 'Connexion en cours...' : 'Connexion Équipe →' }}
-            </button>
-          </form>
-
-          <p class="secure-note">✓ Accès réservé aux employés, superviseurs et administrateurs autorisés.</p>
-        </div>
-      }
-
+      <p class="secure-note">✓ Portail sécurisé · Maison Élan Hospitality</p>
     </div>
   </section>
 </main>

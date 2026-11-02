@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700&display=swap');
-
 :root {
   --forest: #183d34;
   --cream: #f6f3ec;
@@ -12,5 +10,5 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; font-family: 'DM Sans', sans-serif; color: var(--ink); background: var(--cream); }
+body { margin: 0; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--cream); }
 button, input { font: inherit; }

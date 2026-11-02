@@ -85,10 +85,10 @@
 }
 
 .login-form {
-  width: min(430px, 100%);
+  width: min(420px, 100%);
 
   > .brand {
-    margin-bottom: 40px;
+    margin-bottom: 44px;
   }
 
   h1 {
@@ -101,51 +101,36 @@
   .muted {
     color: #6c736e;
     font-size: 14px;
-    margin: 0 0 24px;
+    margin: 0 0 28px;
     line-height: 1.45;
   }
 }
 
-/* Onglets d'authentification */
-.auth-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  background: #e9ece8;
-  padding: 5px;
+.qr-auto-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #eef6f3;
+  border: 1px solid #c2e0d4;
   border-radius: 12px;
-  margin-bottom: 28px;
-}
+  padding: 12px 16px;
+  margin-bottom: 20px;
 
-.tab-btn {
-  border: none;
-  background: transparent;
-  padding: 10px 14px;
-  font: 600 13px/1 'Manrope', sans-serif;
-  color: #55605b;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  .qr-icon {
+    font-size: 24px;
+  }
 
-  &:hover {
+  strong {
+    display: block;
+    font-size: 13px;
     color: #122d26;
   }
 
-  &.active {
-    background: white;
-    color: #122d26;
-    font-weight: 700;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  p {
+    margin: 0;
+    font-size: 12px;
+    color: #4a665d;
   }
-}
-
-.tab-content {
-  animation: fadeIn 0.25s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .field {
@@ -184,7 +169,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin: 14px 0 18px;
+  margin: 20px 0 18px;
 
   .hint-label {
     font-size: 11px;
@@ -221,7 +206,7 @@
   font: 700 14px/1 'Manrope', sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 8px;
+  margin-top: 10px;
 
   &:hover:not(:disabled) {
     background: #1c453a;
