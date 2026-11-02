@@ -56,6 +56,25 @@
         <button class="primary-button" type="submit" [disabled]="isLoading()">
           {{ isLoading() ? 'Vérification...' : 'Se connecter →' }}
         </button>
+
+        <div class="login-divider">
+          <span>ou</span>
+        </div>
+
+        <button type="button" class="qr-scanner-btn" (click)="openQrScanner()">
+          <svg class="qr-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <circle cx="6.5" cy="6.5" r="1" fill="currentColor"/>
+            <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+            <circle cx="6.5" cy="17.5" r="1" fill="currentColor"/>
+            <circle cx="17.5" cy="17.5" r="1" fill="currentColor"/>
+          </svg>
+          <span>Scanner mon Pass QR Code</span>
+        </button>
+        <p class="qr-hint-text">Connexion instantanée par caméra ou import d'image</p>
       </form>
 
       <!-- Raccourcis discrets pour tester rapidement les différents comptes lors des démonstrations -->
@@ -71,4 +90,64 @@
       <p class="secure-note">✓ Portail sécurisé · Maison Élan Hospitality</p>
     </div>
   </section>
+
+  <!-- MODAL: SCANNER QR CODE WEBCAM & FICHIER -->
+  @if (showScanner()) {
+    <div class="scanner-backdrop" (click)="closeQrScanner()">
+      <div class="scanner-modal" (click)="$event.stopPropagation()">
+        <div class="scanner-header">
+          <div class="scanner-title-group">
+            <span class="scanner-eyebrow">PASS CLIENT · SÉJOUR</span>
+            <h2>Scanner votre Pass QR Code</h2>
+            <p>Cadrez le QR Code reçu par email ou sur votre pass physique.</p>
+          </div>
+          <button type="button" class="btn-close-scanner" (click)="closeQrScanner()" aria-label="Fermer">✕</button>
+        </div>
+
+        <div class="scanner-body">
+          @if (scannerSuccess()) {
+            <div class="scanner-status success">
+              <span class="pulse-dot"></span>
+              <strong>{{ scannerSuccess() }}</strong>
+            </div>
+          }
+
+          @if (scannerError()) {
+            <div class="scanner-status error">
+              <span>⚠️</span>
+              <p>{{ scannerError() }}</p>
+            </div>
+          }
+
+          <div class="scanner-viewport-wrapper">
+            <div id="qr-reader" class="qr-reader-container"></div>
+            @if (scannerLoading()) {
+              <div class="scanner-overlay-loading">
+                <div class="scanner-spinner"></div>
+                <p>Initialisation de la caméra...</p>
+              </div>
+            }
+          </div>
+
+          <div class="scanner-alternative">
+            <span class="alt-label">Un souci d'accès caméra ?</span>
+            <label class="btn-upload-qr">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <span>Importer une photo du QR Code</span>
+              <input type="file" accept="image/*" (change)="onQrFileSelected($event)" hidden />
+            </label>
+          </div>
+        </div>
+
+        <div class="scanner-footer">
+          <button type="button" class="btn-cancel-scanner" (click)="closeQrScanner()">Annuler</button>
+        </div>
+      </div>
+    </div>
+  }
 </main>
+
