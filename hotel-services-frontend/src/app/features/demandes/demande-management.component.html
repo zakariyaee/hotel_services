@@ -25,111 +25,113 @@
     </div>
   }
 
-  <div class="grid-layout">
-    <!-- COLONNE GAUCHE : Formulaire & Sélection de service -->
-    <div class="card form-card">
-      <div class="card-header">
-        <h2 class="card-title">Nouvelle Demande de Service</h2>
-        <span class="card-badge">Formulaire JPA</span>
-      </div>
-
-      <form (ngSubmit)="submitDemande()" class="service-form">
-        <!-- 1. Sélection du Service -->
-        <div class="form-group">
-          <label for="service-select">1. Choisissez un Service de l'Hôtel :</label>
-          <select
-            id="service-select"
-            class="form-control"
-            [ngModel]="selectedServiceId"
-            (ngModelChange)="onSelectService($event)"
-            name="selectedService"
-            required>
-            @for (srv of services(); track srv.idService) {
-              <option [value]="srv.idService">
-                {{ srv.nom }} ({{ srv.departement?.nom || 'Général' }} — ~{{ srv.dureeEstimee }} min)
-              </option>
-            }
-          </select>
+  <div class="grid-layout" [class.staff-mode]="isStaff()">
+    <!-- COLONNE GAUCHE : Formulaire (masqué pour le STAFF) -->
+    @if (!isStaff()) {
+      <div class="card form-card">
+        <div class="card-header">
+          <h2 class="card-title">Nouvelle Demande de Service</h2>
+          <span class="card-badge">Formulaire JPA</span>
         </div>
 
-        <!-- Aperçu visuel du service sélectionné -->
-        @if (getSelectedService(); as srv) {
-          <div class="service-preview">
-            @if (srv.imageUrl) {
-              <img [src]="srv.imageUrl" [alt]="srv.nom" class="service-img" />
-            }
-            <div class="service-details">
-              <h3>{{ srv.nom }}</h3>
-              <p class="service-desc">{{ srv.description }}</p>
-              <div class="service-meta">
-                <span class="meta-tag">
-                  <strong>Département :</strong> {{ srv.departement?.nom || 'Général' }}
-                </span>
-                <span class="meta-tag">
-                  <strong>Durée estimée :</strong> {{ srv.dureeEstimee }} minutes
-                </span>
-                <span class="meta-tag" [class.available]="srv.disponibilite">
-                  {{ srv.disponibilite ? '● Disponible 24/7' : '○ Indisponible' }}
-                </span>
+        <form (ngSubmit)="submitDemande()" class="service-form">
+          <!-- 1. Sélection du Service -->
+          <div class="form-group">
+            <label for="service-select">1. Choisissez un Service de l'Hôtel :</label>
+            <select
+              id="service-select"
+              class="form-control"
+              [ngModel]="selectedServiceId"
+              (ngModelChange)="onSelectService($event)"
+              name="selectedService"
+              required>
+              @for (srv of services(); track srv.idService) {
+                <option [value]="srv.idService">
+                  {{ srv.nom }} ({{ srv.departement?.nom || 'Général' }} — ~{{ srv.dureeEstimee }} min)
+                </option>
+              }
+            </select>
+          </div>
+
+          <!-- Aperçu visuel du service sélectionné -->
+          @if (getSelectedService(); as srv) {
+            <div class="service-preview">
+              @if (srv.imageUrl) {
+                <img [src]="srv.imageUrl" [alt]="srv.nom" class="service-img" />
+              }
+              <div class="service-details">
+                <h3>{{ srv.nom }}</h3>
+                <p class="service-desc">{{ srv.description }}</p>
+                <div class="service-meta">
+                  <span class="meta-tag">
+                    <strong>Département :</strong> {{ srv.departement?.nom || 'Général' }}
+                  </span>
+                  <span class="meta-tag">
+                    <strong>Durée estimée :</strong> {{ srv.dureeEstimee }} minutes
+                  </span>
+                  <span class="meta-tag" [class.available]="srv.disponibilite">
+                    {{ srv.disponibilite ? '● Disponible 24/7' : '○ Indisponible' }}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        }
-
-        <!-- 2. Priorité de la demande -->
-        <div class="form-group">
-          <label>2. Niveau de Priorité :</label>
-          <div class="priority-options">
-            @for (p of priorites; track p) {
-              <label class="priority-chip" [class.selected]="selectedPriorite === p">
-                <input
-                  type="radio"
-                  name="priorite"
-                  [value]="p"
-                  [(ngModel)]="selectedPriorite" />
-                <span>{{ p }}</span>
-              </label>
-            }
-          </div>
-        </div>
-
-        <!-- 3. Temps estimé ajusté -->
-        <div class="form-group">
-          <label for="temps-estime">3. Temps de traitement estimé (minutes) :</label>
-          <input
-            id="temps-estime"
-            type="number"
-            class="form-control"
-            [(ngModel)]="tempsTraitementEstime"
-            name="tempsTraitementEstime"
-            min="1" />
-        </div>
-
-        <!-- 4. Notes ou motif spécifique -->
-        <div class="form-group">
-          <label for="custom-notes">4. Précisions pour le personnel (optionnel) :</label>
-          <textarea
-            id="custom-notes"
-            class="form-control"
-            rows="2"
-            [(ngModel)]="customNotes"
-            name="customNotes"
-            placeholder="Ex : plateau à déposer sur la terrasse, serviettes supplémentaires..."></textarea>
-        </div>
-
-        <!-- Bouton d'action -->
-        <button
-          type="submit"
-          class="btn-submit"
-          [disabled]="isSubmitting() || !selectedServiceId">
-          @if (isSubmitting()) {
-            <span>Enregistrement dans MySQL...</span>
-          } @else {
-            <span>Transmettre la Demande au Personnel →</span>
           }
-        </button>
-      </form>
-    </div>
+
+          <!-- 2. Priorité de la demande -->
+          <div class="form-group">
+            <label>2. Niveau de Priorité :</label>
+            <div class="priority-options">
+              @for (p of priorites; track p) {
+                <label class="priority-chip" [class.selected]="selectedPriorite === p">
+                  <input
+                    type="radio"
+                    name="priorite"
+                    [value]="p"
+                    [(ngModel)]="selectedPriorite" />
+                  <span>{{ p }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- 3. Temps estimé ajusté -->
+          <div class="form-group">
+            <label for="temps-estime">3. Temps de traitement estimé (minutes) :</label>
+            <input
+              id="temps-estime"
+              type="number"
+              class="form-control"
+              [(ngModel)]="tempsTraitementEstime"
+              name="tempsTraitementEstime"
+              min="1" />
+          </div>
+
+          <!-- 4. Notes ou motif spécifique -->
+          <div class="form-group">
+            <label for="custom-notes">4. Précisions pour le personnel (optionnel) :</label>
+            <textarea
+              id="custom-notes"
+              class="form-control"
+              rows="2"
+              [(ngModel)]="customNotes"
+              name="customNotes"
+              placeholder="Ex : plateau à déposer sur la terrasse, serviettes supplémentaires..."></textarea>
+          </div>
+
+          <!-- Bouton d'action -->
+          <button
+            type="submit"
+            class="btn-submit"
+            [disabled]="isSubmitting() || !selectedServiceId">
+            @if (isSubmitting()) {
+              <span>Enregistrement dans MySQL...</span>
+            } @else {
+              <span>Transmettre la Demande au Personnel →</span>
+            }
+          </button>
+        </form>
+      </div>
+    }
 
     <!-- COLONNE DROITE : Liste des Demandes Réelles -->
     <div class="card list-card">
@@ -148,7 +150,9 @@
       } @else if (demandes().length === 0) {
         <div class="empty-state">
           <p>Aucune demande enregistrée pour l'instant.</p>
-          <small>Utilisez le formulaire à gauche pour soumettre une première demande.</small>
+          @if (!isStaff()) {
+            <small>Utilisez le formulaire à gauche pour soumettre une première demande.</small>
+          }
         </div>
       } @else {
         <div class="demande-list">
@@ -194,9 +198,12 @@
                 </div>
                 @if (isStaff() && d.idDemande) {
                   <div class="staff-actions">
-                    <button type="button" (click)="updateStatus(d.idDemande!, 'EN_COURS')">Prendre en charge</button>
-                    <button type="button" (click)="updateStatus(d.idDemande!, 'TERMINEE')">Marquer terminée</button>
-                    <button type="button" class="danger" (click)="deleteDemande(d.idDemande!)">Supprimer</button>
+                    <button type="button" class="btn-action btn-prendre" (click)="updateStatus(d.idDemande!, 'EN_COURS')">
+                      ▶ Prendre en charge
+                    </button>
+                    <button type="button" class="btn-action btn-terminer" (click)="updateStatus(d.idDemande!, 'TERMINEE')">
+                      ✓ Marquer terminée
+                    </button>
                   </div>
                 }
               </div>
