@@ -95,12 +95,16 @@ public class AuthService {
             throw new IllegalStateException("Votre séjour n'a pas encore commencé (début prévu le " + reservation.getDateDebut() + ").");
         }
 
-        if (reservation.getDateFin() != null && today.isAfter(reservation.getDateFin())) {
+        if (reservation.getStatut() == StatutReservation.ANNULEE) {
+            throw new IllegalStateException("Cette réservation a été annulée.");
+        }
+
+        if (reservation.getStatut() == StatutReservation.TERMINEE) {
             throw new IllegalStateException("Votre séjour est terminé (fin le " + reservation.getDateFin() + "). Le code n'est plus actif.");
         }
 
-        if (reservation.getStatut() == StatutReservation.ANNULEE) {
-            throw new IllegalStateException("Cette réservation a été annulée.");
+        if (reservation.getDateFin() != null && today.isAfter(reservation.getDateFin()) && reservation.getStatut() != StatutReservation.EN_COURS) {
+            throw new IllegalStateException("Votre séjour est terminé (fin le " + reservation.getDateFin() + "). Le code n'est plus actif.");
         }
 
         // Incrémentation du compteur d'utilisations

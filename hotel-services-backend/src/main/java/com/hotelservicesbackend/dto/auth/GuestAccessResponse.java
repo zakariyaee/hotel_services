@@ -15,3 +15,4 @@ public record GuestAccessResponse(
         LocalDate dateDebut,
         LocalDate dateFin
 ) {}
+

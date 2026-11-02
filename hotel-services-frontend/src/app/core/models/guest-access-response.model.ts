@@ -11,3 +11,4 @@ export interface GuestAccessResponse {
   dateDebut: string;
   dateFin: string;
 }
+

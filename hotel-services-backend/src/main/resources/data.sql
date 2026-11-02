@@ -65,13 +65,15 @@ INSERT IGNORE INTO agent (id_utilisateur, disponible) VALUES
 
 -- Réservation pour le client 1 dans la chambre 3 (Suite Royale Prestige 201)
 INSERT IGNORE INTO reservation (id_reservation, date_debut, date_fin, statut, type_reservation, id_chambre, id_client) VALUES
-(1, '2026-10-10', '2026-11-30', 'EN_COURS', 'SEJOUR_PRESTIGE', 3, 1);
+(1, '2026-10-10', '2027-12-31', 'EN_COURS', 'SEJOUR_PRESTIGE', 3, 1);
+UPDATE reservation SET date_fin = '2027-12-31', statut = 'EN_COURS' WHERE id_reservation = 1;
 
 -- Tokens d'accès temporaires pour la réservation 1 (Code client séjour)
 INSERT IGNORE INTO client_access_token (token_id, token_hash, date_creation, date_expiration, revoked, nbr_utilisations, id_reservation) VALUES
-(1, 'RES-2026-001', '2026-10-10 10:00:00', '2026-11-30 23:59:59', 0, 0, 1),
-(2, 'STAY-201', '2026-10-10 10:00:00', '2026-11-30 23:59:59', 0, 0, 1),
+(1, 'RES-2026-001', '2026-10-10 10:00:00', '2027-12-31 23:59:59', 0, 0, 1),
+(2, 'STAY-201', '2026-10-10 10:00:00', '2027-12-31 23:59:59', 0, 0, 1),
 (3, 'EXP-999', '2025-01-01 10:00:00', '2025-01-10 23:59:59', 0, 0, 1);
+UPDATE client_access_token SET date_expiration = '2027-12-31 23:59:59', revoked = 0 WHERE token_hash IN ('RES-2026-001', 'STAY-201');
 
 -- Demandes initiales
 INSERT IGNORE INTO demande (id_demande, reference_demande, date_creation, priorite, statut, temps_traitement_estime, id_client, id_service, id_receptionniste) VALUES

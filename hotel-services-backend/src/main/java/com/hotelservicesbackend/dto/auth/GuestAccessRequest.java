@@ -6,3 +6,4 @@ public record GuestAccessRequest(
         @NotBlank(message = "Le code d'accès de réservation est obligatoire")
         String accessCode
 ) {}
+
