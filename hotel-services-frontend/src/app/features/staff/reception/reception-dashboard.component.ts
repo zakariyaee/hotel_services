@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,15 +8,17 @@ import { HotelServiceService } from '../../../core/services/service.service';
 import { StaffDemande, ReceptionOverview, RoomGuestOption, ReceptionCreateRequest } from '../../../core/models/staff.model';
 import { Service } from '../../../core/models/service.model';
 import { StatutDemande, PrioriteDemande } from '../../../core/models/enums.model';
+import { NotificationWebSocketService } from '../../../core/services/notification-websocket.service';
+import { NotificationBellComponent } from '../../../shared/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-reception-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NotificationBellComponent],
   templateUrl: './reception-dashboard.component.html',
   styleUrl: './reception-dashboard.component.scss',
 })
-export class ReceptionDashboardComponent implements OnInit {
+export class ReceptionDashboardComponent implements OnInit, OnDestroy {
   overview = signal<ReceptionOverview | null>(null);
   demandes = signal<StaffDemande[]>([]);
   roomGuests = signal<RoomGuestOption[]>([]);
@@ -44,11 +46,18 @@ export class ReceptionDashboardComponent implements OnInit {
     public auth: AuthService,
     private staffApi: StaffService,
     private serviceApi: HotelServiceService,
-    private router: Router
+    private router: Router,
+    public wsNotif: NotificationWebSocketService
   ) {}
 
   ngOnInit(): void {
     this.loadAll();
+    const token = this.auth.getToken();
+    if (token) this.wsNotif.connect(token);
+  }
+
+  ngOnDestroy(): void {
+    this.wsNotif.disconnect();
   }
 
   loadAll(): void {
