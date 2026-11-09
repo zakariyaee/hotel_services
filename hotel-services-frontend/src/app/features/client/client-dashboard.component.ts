@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,6 +7,8 @@ import { HotelServiceService } from '../../core/services/service.service';
 import { DemandeService } from '../../core/services/demande.service';
 import { Service } from '../../core/models/service.model';
 import { Demande, CreateDemandeDto } from '../../core/models/demande.model';
+import { NotificationWebSocketService } from '../../core/services/notification-websocket.service';
+import { NotificationBellComponent } from '../../shared/notification-bell/notification-bell.component';
 
 export interface ServiceCardDef {
   id: string;
@@ -39,11 +41,11 @@ export interface ActiveDemandeDisplay {
 @Component({
   selector: 'app-client-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NotificationBellComponent],
   templateUrl: './client-dashboard.component.html',
   styleUrl: './client-dashboard.component.scss',
 })
-export class ClientDashboardComponent implements OnInit {
+export class ClientDashboardComponent implements OnInit, OnDestroy {
   // Navigation view: 'hub' (Screen 1) or 'request-form' (Screen 2)
   currentView: 'hub' | 'request-form' = 'hub';
 
@@ -165,14 +167,21 @@ export class ClientDashboardComponent implements OnInit {
   customNotes = '';
 
   constructor(
-    private auth: AuthService,
+    public auth: AuthService,
     private router: Router,
     private serviceService: HotelServiceService,
-    private demandeService: DemandeService
+    private demandeService: DemandeService,
+    public wsNotif: NotificationWebSocketService
   ) {}
 
   ngOnInit(): void {
     this.loadBackendData();
+    const token = this.auth.currentUser()?.token || this.auth.getToken();
+    if (token) this.wsNotif.connect(token);
+  }
+
+  ngOnDestroy(): void {
+    this.wsNotif.disconnect();
   }
 
   get currentUser() {
@@ -198,11 +207,11 @@ export class ClientDashboardComponent implements OnInit {
   }
 
   get roomNumber(): string {
-    return '204';
+    return this.auth.getRoomNumber();
   }
 
   get roomType(): string {
-    return 'Suite Prestige';
+    return this.auth.getRoomType();
   }
 
   get stayBadgeText(): string {
@@ -382,6 +391,7 @@ export class ClientDashboardComponent implements OnInit {
       priorite: this.selectedTiming === 'asap' ? 'HAUTE' : 'NORMALE',
       referenceDemande: reference,
       tempsTraitementEstime: delayMinutes,
+      commentairesClient: this.customNotes?.trim() || undefined,
     };
 
     this.demandeService.create(dto).subscribe({
@@ -474,6 +484,11 @@ export class ClientDashboardComponent implements OnInit {
     this.showUserMenu = false;
   }
 
+  // Cancellation state
+  showCancelConfirm = false;
+  cancelReason = '';
+  isCancelling = signal(false);
+
   openDemandeDetail(d: Demande): void {
     this.selectedModalDemande = {
       idDemande: d.idDemande,
@@ -485,12 +500,52 @@ export class ClientDashboardComponent implements OnInit {
       dateCreation: d.dateCreation,
       priorite: d.priorite,
     };
+    this.showCancelConfirm = false;
+    this.cancelReason = '';
     this.showDemandDetailModal = true;
   }
 
   closeDemandModal(): void {
     this.showDemandDetailModal = false;
     this.selectedModalDemande = null;
+    this.showCancelConfirm = false;
+    this.cancelReason = '';
+  }
+
+  initiateCancel(): void {
+    this.showCancelConfirm = true;
+    this.cancelReason = '';
+  }
+
+  abortCancel(): void {
+    this.showCancelConfirm = false;
+    this.cancelReason = '';
+  }
+
+  confirmCancel(): void {
+    if (!this.selectedModalDemande?.idDemande) return;
+
+    this.isCancelling.set(true);
+    const id = this.selectedModalDemande.idDemande;
+    const motif = this.cancelReason?.trim() || 'Annulée à la demande du client';
+
+    this.demandeService.update(id, {
+      statut: 'ANNULEE' as any,
+      motifAnnulation: motif,
+    }).subscribe({
+      next: () => {
+        this.isCancelling.set(false);
+        this.toastMessage.set('Votre demande a bien été annulée.');
+        this.closeDemandModal();
+        this.refreshDemandes();
+        setTimeout(() => this.toastMessage.set(''), 5000);
+      },
+      error: (err) => {
+        this.isCancelling.set(false);
+        this.toastMessage.set(err.error?.message || "Échec de l'annulation de la demande.");
+        setTimeout(() => this.toastMessage.set(''), 5000);
+      }
+    });
   }
 
   logout(): void {

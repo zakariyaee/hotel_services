@@ -29,4 +29,5 @@ export interface CreateDemandeDto {
   priorite: PrioriteDemande;
   referenceDemande?: string;
   tempsTraitementEstime?: number;
+  commentairesClient?: string;
 }

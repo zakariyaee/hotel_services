@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -6,15 +6,17 @@ import { StaffService } from '../../../core/services/staff.service';
 import { StaffDemande } from '../../../core/models/staff.model';
 import { HotelServiceService } from '../../../core/services/service.service';
 import { Service } from '../../../core/models/service.model';
+import { NotificationWebSocketService } from '../../../core/services/notification-websocket.service';
+import { NotificationBellComponent } from '../../../shared/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-employe-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NotificationBellComponent],
   templateUrl: './employe-dashboard.component.html',
   styleUrl: './employe-dashboard.component.scss',
 })
-export class EmployeDashboardComponent implements OnInit {
+export class EmployeDashboardComponent implements OnInit, OnDestroy {
   myTasks = signal<StaffDemande[]>([]);
   poolTasks = signal<StaffDemande[]>([]);
   isLoading = signal(true);
@@ -25,11 +27,18 @@ export class EmployeDashboardComponent implements OnInit {
   constructor(
     public auth: AuthService,
     private staffApi: StaffService,
-    private router: Router
+    private router: Router,
+    public wsNotif: NotificationWebSocketService
   ) {}
 
   ngOnInit(): void {
     this.loadAll();
+    const token = this.auth.getToken();
+    if (token) this.wsNotif.connect(token);
+  }
+
+  ngOnDestroy(): void {
+    this.wsNotif.disconnect();
   }
 
   loadAll(): void {

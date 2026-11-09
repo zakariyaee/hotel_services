@@ -77,5 +77,13 @@ export class StaffService {
   receptionCreateDemand(request: ReceptionCreateRequest): Observable<StaffDemande> {
     return this.http.post<StaffDemande>(`${this.baseUrl}/reception/create-demand`, request);
   }
+
+  receptionRejectDemand(idDemande: number, motifRejet?: string): Observable<StaffDemande> {
+    return this.http.post<StaffDemande>(`${this.baseUrl}/reception/demandes/${idDemande}/reject`, { motifRejet });
+  }
+
+  receptionAssignDemand(idDemande: number, idEmploye: number): Observable<StaffDemande> {
+    return this.http.post<StaffDemande>(`${this.baseUrl}/reception/demandes/${idDemande}/assign`, { idEmploye });
+  }
 }
 

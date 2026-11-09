@@ -1,4 +1,4 @@
-﻿// ── Shared staff layout vars (identical to employe dashboard) ─────────────
+// ── Shared staff layout vars (identical to employe dashboard) ─────────────
 $forest: #172a24;
 $cream:  #f6f3ec;
 $gold:   #c59b27;
@@ -55,7 +55,9 @@ $success: #157347;
     }
 
     .profile-info {
-      strong { display: block; font-size: 13px; margin-bottom: 4px; }
+      flex: 1;
+      min-width: 0;
+      strong { display: block; font-size: 13px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; }
     }
   }
 
@@ -143,6 +145,32 @@ $success: #157347;
   padding: 32px clamp(16px, 4vw, 48px);
   overflow-y: auto;
   position: relative;
+}
+
+.staff-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(23, 42, 36, 0.08);
+
+  .staff-page-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: $forest;
+    margin: 0;
+  }
+  .staff-page-sub {
+    font-size: 13px;
+    color: #6a7973;
+    margin: 4px 0 0 0;
+  }
+  .staff-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────

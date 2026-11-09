@@ -1,19 +1,21 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { StaffService } from '../../../core/services/staff.service';
 import { StaffDemande, StaffMember } from '../../../core/models/staff.model';
+import { NotificationWebSocketService } from '../../../core/services/notification-websocket.service';
+import { NotificationBellComponent } from '../../../shared/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-personnel-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NotificationBellComponent],
   templateUrl: './personnel-dashboard.component.html',
   styleUrl: './personnel-dashboard.component.scss',
 })
-export class PersonnelDashboardComponent implements OnInit {
+export class PersonnelDashboardComponent implements OnInit, OnDestroy {
   departmentTasks = signal<StaffDemande[]>([]);
   team = signal<StaffMember[]>([]);
   alerts = signal<StaffDemande[]>([]);
@@ -30,11 +32,18 @@ export class PersonnelDashboardComponent implements OnInit {
   constructor(
     public auth: AuthService,
     private staffApi: StaffService,
-    private router: Router
+    private router: Router,
+    public wsNotif: NotificationWebSocketService
   ) {}
 
   ngOnInit(): void {
     this.loadAll();
+    const token = this.auth.getToken();
+    if (token) this.wsNotif.connect(token);
+  }
+
+  ngOnDestroy(): void {
+    this.wsNotif.disconnect();
   }
 
   loadAll(): void {

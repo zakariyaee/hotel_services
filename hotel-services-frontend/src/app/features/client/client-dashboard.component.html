@@ -13,47 +13,8 @@
       </div>
 
       <div class="header-actions">
-        <!-- Notification button -->
-        <div class="action-dropdown-wrap">
-          <button 
-            type="button" 
-            class="header-icon-btn" 
-            (click)="toggleNotifications()" 
-            aria-label="Notifications"
-            [class.active]="showNotifications">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            @if (demandes().length > 0) {
-              <span class="badge-dot"></span>
-            }
-          </button>
-
-          @if (showNotifications) {
-            <div class="dropdown-panel notif-panel">
-              <div class="panel-header">
-                <h4>Notifications de service</h4>
-                <span class="panel-count">{{ demandes().length }} demande(s) en base</span>
-              </div>
-              <div class="panel-list">
-                @if (demandes().length === 0) {
-                  <div class="panel-empty">Aucune demande enregistrée.</div>
-                } @else {
-                  @for (d of demandes(); track d.idDemande) {
-                    <div class="panel-item" (click)="openDemandeDetail(d)">
-                      <div class="item-status-icon" [ngClass]="getStatutDotClass(d.statut)">●</div>
-                      <div class="item-content">
-                        <strong>{{ d.referenceDemande }} · {{ d.service?.nom }}</strong>
-                        <span>{{ getStatutLabel(d.statut) }}</span>
-                      </div>
-                    </div>
-                  }
-                }
-              </div>
-            </div>
-          }
-        </div>
+        <!-- Notification button (Temps Réel) -->
+        <app-notification-bell></app-notification-bell>
 
         <!-- User profile button -->
         <div class="action-dropdown-wrap">
@@ -606,7 +567,49 @@
           </div>
         </div>
 
+        <!-- Formulaire de motif d'annulation si déclenché -->
+        @if (showCancelConfirm) {
+          <div class="cancel-prompt-box">
+            <label for="cancelReasonInput"><strong>Motif de l'annulation (facultatif) :</strong></label>
+            <input
+              id="cancelReasonInput"
+              type="text"
+              class="cancel-input"
+              [(ngModel)]="cancelReason"
+              placeholder="Ex. Changement d'avis, plus nécessaire..."
+              maxlength="200"
+            />
+            <div class="cancel-actions">
+              <button
+                type="button"
+                class="btn-confirm-cancel"
+                [disabled]="isCancelling()"
+                (click)="confirmCancel()"
+              >
+                {{ isCancelling() ? 'Annulation en cours...' : 'Confirmer l\'annulation' }}
+              </button>
+              <button
+                type="button"
+                class="btn-abort-cancel"
+                [disabled]="isCancelling()"
+                (click)="abortCancel()"
+              >
+                Revenir
+              </button>
+            </div>
+          </div>
+        }
+
         <div class="modal-footer">
+          @if (!showCancelConfirm && (selectedModalDemande.status === 'EN_ATTENTE' || selectedModalDemande.status === 'PRISE_EN_CHARGE')) {
+            <button
+              type="button"
+              class="btn-cancel-demande"
+              (click)="initiateCancel()"
+            >
+              Annuler cette demande
+            </button>
+          }
           <button type="button" class="btn-modal-close" (click)="closeDemandModal()">Fermer</button>
         </div>
       </div>

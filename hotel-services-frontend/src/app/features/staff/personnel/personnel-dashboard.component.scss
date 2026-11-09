@@ -35,12 +35,40 @@ $line: rgba(23, 42, 36, 0.08);
 }
 
 .profile-info {
-  strong { display: block; font-size: 13px; margin-bottom: 4px; }
+  flex: 1;
+  min-width: 0;
+  strong { display: block; font-size: 13px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; }
 }
 .role-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
   &.personnel { background: rgba(124, 58, 237, 0.25); color: #c4b5fd; } }
 
 .main-area { flex: 1; padding: 32px clamp(16px, 4vw, 48px); overflow-y: auto; position: relative; }
+
+.staff-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(23, 42, 36, 0.08);
+
+  .staff-page-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: $forest;
+    margin: 0;
+  }
+  .staff-page-sub {
+    font-size: 13px;
+    color: #6a7973;
+    margin: 4px 0 0 0;
+  }
+  .staff-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}
 
 .toast { position: fixed; top: 20px; right: 24px; z-index: 999; padding: 14px 20px; background: $forest; color: #fff; border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 20px rgba(0,0,0,0.15); border-left: 4px solid $gold; animation: slideIn 0.3s ease; &.toast-error { border-left-color: #c0392b; } }
 @keyframes slideIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
