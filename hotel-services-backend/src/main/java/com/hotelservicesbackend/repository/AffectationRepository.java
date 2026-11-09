@@ -10,4 +10,5 @@ import java.util.List;
 public interface AffectationRepository extends JpaRepository<Affectation, Long> {
     List<Affectation> findByDemande_IdDemande(Long idDemande);
     List<Affectation> findByAgent_IdUtilisateur(Long idAgent);
+    List<Affectation> findByEmploye_IdUtilisateur(Long idEmploye);
 }

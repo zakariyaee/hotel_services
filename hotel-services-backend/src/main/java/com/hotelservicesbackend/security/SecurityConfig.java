@@ -44,8 +44,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Routes publiques
                 .requestMatchers("/api/auth/**").permitAll()
-                // Routes réservées au personnel / superviseur
-                .requestMatchers("/api/staff/personnel/**").hasAnyRole("PERSONNEL", "ADMIN")
+                .requestMatchers("/ws/**").permitAll()
+                // Routes réservées au personnel / superviseur et gestion des affectations
+                .requestMatchers("/api/staff/personnel/**").hasAnyRole("PERSONNEL", "STAFF", "RECEPTIONNISTE", "EMPLOYE", "ADMIN")
                 // Routes réservées au réceptionniste
                 .requestMatchers("/api/staff/reception/**").hasAnyRole("RECEPTIONNISTE", "ADMIN")
                 // Routes réservées à l'employé de terrain
@@ -73,7 +74,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        config.setAllowedOrigins(List.of("http://localhost:4200", "http://127.0.0.1:4200"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         config.setAllowCredentials(true);

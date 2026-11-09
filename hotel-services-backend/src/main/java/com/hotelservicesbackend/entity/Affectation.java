@@ -24,12 +24,20 @@ public class Affectation {
     private LocalDateTime dateAffectation;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idReceptionniste", nullable = false)
+    @JoinColumn(name = "idReceptionniste", nullable = true)
     private Receptionniste receptionniste;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idAgent", nullable = false)
+    @JoinColumn(name = "idAgent", nullable = true)
     private Agent agent;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idEmploye", nullable = true)
+    private Employe employe;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idAssigneur", nullable = true)
+    private Utilisateur assigneur;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idDemande", nullable = false)

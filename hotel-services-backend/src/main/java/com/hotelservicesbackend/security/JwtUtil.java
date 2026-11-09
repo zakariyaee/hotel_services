@@ -64,7 +64,13 @@ public class JwtUtil {
     }
 
     public Long extractUserId(String token) {
-        return extractClaim(token, claims -> claims.get("userId", Long.class));
+        return extractClaim(token, claims -> {
+            Object val = claims.get("userId");
+            if (val instanceof Number n) {
+                return n.longValue();
+            }
+            return null;
+        });
     }
 
     public String extractRole(String token) {
@@ -72,7 +78,13 @@ public class JwtUtil {
     }
 
     public Long extractReservationId(String token) {
-        return extractClaim(token, claims -> claims.get("reservationId", Long.class));
+        return extractClaim(token, claims -> {
+            Object val = claims.get("reservationId");
+            if (val instanceof Number n) {
+                return n.longValue();
+            }
+            return null;
+        });
     }
 
     public String extractNumChambre(String token) {

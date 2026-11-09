@@ -31,6 +31,7 @@ public class StaffService {
     private final ReceptionnisteRepository receptionnisteRepository;
     private final AffectationRepository affectationRepository;
     private final DepartementRepository departementRepository;
+    private final RealtimeNotificationService notificationService;
 
     public StaffService(
             DemandeRepository demandeRepository,
@@ -42,7 +43,8 @@ public class StaffService {
             ChambreRepository chambreRepository,
             ReceptionnisteRepository receptionnisteRepository,
             AffectationRepository affectationRepository,
-            DepartementRepository departementRepository
+            DepartementRepository departementRepository,
+            RealtimeNotificationService notificationService
     ) {
         this.demandeRepository = demandeRepository;
         this.employeRepository = employeRepository;
@@ -54,6 +56,7 @@ public class StaffService {
         this.receptionnisteRepository = receptionnisteRepository;
         this.affectationRepository = affectationRepository;
         this.departementRepository = departementRepository;
+        this.notificationService = notificationService;
     }
 
     private Employe getEmployeByEmail(String email) {
@@ -127,6 +130,7 @@ public class StaffService {
         demande.setDateModification(LocalDateTime.now());
 
         Demande saved = demandeRepository.save(demande);
+        try { notificationService.notifyTaskClaimed(saved, employe); } catch (Exception ignored) {}
         return mapToStaffDemandeResponse(saved);
     }
 
@@ -159,6 +163,7 @@ public class StaffService {
         }
 
         Demande saved = demandeRepository.save(demande);
+        try { notificationService.notifyTaskCompleted(saved, employe); } catch (Exception ignored) {}
         return mapToStaffDemandeResponse(saved);
     }
 
@@ -240,11 +245,15 @@ public class StaffService {
 
     @Transactional
     public StaffDemandeResponse assignTask(Long idDemande, Long idEmploye, String supervisorEmail) {
-        // Vérification du rôle de l'assignateur (doit être PERSONNEL ou ADMIN)
+        // Vérification de l'utilisateur qui affecte (Personnel, Réceptionniste, Employé ou Admin)
         Utilisateur supervisorUser = utilisateurRepository.findByEmail(supervisorEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Superviseur introuvable"));
-        if (supervisorUser.getRole() != Role.PERSONNEL && supervisorUser.getRole() != Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Seul un superviseur (rôle PERSONNEL) ou un administrateur peut affecter des tâches.");
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+        if (supervisorUser.getRole() != Role.PERSONNEL 
+                && supervisorUser.getRole() != Role.STAFF 
+                && supervisorUser.getRole() != Role.RECEPTIONNISTE 
+                && supervisorUser.getRole() != Role.EMPLOYE 
+                && supervisorUser.getRole() != Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Seul un membre du personnel ou un administrateur peut affecter des tâches.");
         }
 
         Demande demande = demandeRepository.findById(idDemande)
@@ -264,6 +273,23 @@ public class StaffService {
         demande.setDateModification(LocalDateTime.now());
 
         Demande saved = demandeRepository.save(demande);
+
+        // CDC10 : Enregistrement de l'historique d'affectation
+        try {
+            Affectation affectation = new Affectation();
+            affectation.setDemande(saved);
+            affectation.setEmploye(assignee);
+            affectation.setAssigneur(supervisorUser);
+            if (assignee instanceof Agent agent) {
+                affectation.setAgent(agent);
+            }
+            if (supervisorUser instanceof Receptionniste recp) {
+                affectation.setReceptionniste(recp);
+            }
+            affectationRepository.save(affectation);
+        } catch (Exception ignored) {}
+
+        try { notificationService.notifyTaskAssigned(saved, assignee, supervisorUser); } catch (Exception ignored) {}
         return mapToStaffDemandeResponse(saved);
     }
 
@@ -369,6 +395,29 @@ public class StaffService {
         demande.setReferenceDemande("DEM-" + System.currentTimeMillis());
 
         Demande saved = demandeRepository.save(demande);
+        try { notificationService.notifyNewDemande(saved); } catch (Exception ignored) {}
+        return mapToStaffDemandeResponse(saved);
+    }
+
+    @Transactional
+    public StaffDemandeResponse receptionRejectDemand(Long idDemande, String motif, String receptionistEmail) {
+        Demande demande = demandeRepository.findById(idDemande)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Demande introuvable: " + idDemande));
+
+        if (demande.getStatut() == StatutDemande.TERMINEE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Impossible de rejeter une demande déjà terminée.");
+        }
+
+        String motifRejet = (motif != null && !motif.isBlank()) ? motif.trim() : "Non réalisable par les services de l'hôtel";
+        demande.setStatut(StatutDemande.REJETEE);
+        demande.setMotifRejet(motifRejet);
+        demande.setDateModification(LocalDateTime.now());
+        Demande saved = demandeRepository.save(demande);
+
+        try {
+            notificationService.notifyTaskRejected(saved, motifRejet);
+        } catch (Exception ignored) {}
+
         return mapToStaffDemandeResponse(saved);
     }
 

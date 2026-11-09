@@ -14,4 +14,5 @@ public class DemandeRequest {
     private PrioriteDemande priorite;
     private Integer tempsTraitementEstime;
     private String referenceDemande;
+    private String commentairesClient;
 }

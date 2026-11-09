@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/staff")
@@ -102,6 +103,25 @@ public class StaffController {
             Authentication authentication
     ) {
         return staffService.receptionCreateDemand(request, authentication.getName());
+    }
+
+    @PostMapping("/reception/demandes/{id}/reject")
+    public StaffDemandeResponse receptionRejectDemand(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication authentication
+    ) {
+        String motif = body != null ? body.get("motifRejet") : null;
+        return staffService.receptionRejectDemand(id, motif, authentication.getName());
+    }
+
+    @PostMapping("/reception/demandes/{id}/assign")
+    public StaffDemandeResponse receptionAssignDemand(
+            @PathVariable Long id,
+            @RequestBody AssignTaskRequest request,
+            Authentication authentication
+    ) {
+        return staffService.assignTask(id, request.idEmploye(), authentication.getName());
     }
 }
 

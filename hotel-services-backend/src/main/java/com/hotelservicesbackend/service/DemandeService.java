@@ -7,13 +7,18 @@ import com.hotelservicesbackend.entity.Demande;
 import com.hotelservicesbackend.entity.Service;
 import com.hotelservicesbackend.entity.enums.PrioriteDemande;
 import com.hotelservicesbackend.entity.enums.StatutDemande;
+import com.hotelservicesbackend.entity.enums.StatutReservation;
+import com.hotelservicesbackend.entity.Reservation;
 import com.hotelservicesbackend.repository.ClientRepository;
 import com.hotelservicesbackend.repository.DemandeRepository;
+import com.hotelservicesbackend.repository.ReservationRepository;
 import com.hotelservicesbackend.repository.ServiceRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @org.springframework.stereotype.Service
@@ -21,26 +26,26 @@ public class DemandeService {
     private final DemandeRepository demandeRepository;
     private final ServiceRepository serviceRepository;
     private final ClientRepository clientRepository;
+    private final ReservationRepository reservationRepository;
+    private final RealtimeNotificationService notificationService;
 
     public DemandeService(DemandeRepository demandeRepository, ServiceRepository serviceRepository,
-                          ClientRepository clientRepository) {
+                          ClientRepository clientRepository, ReservationRepository reservationRepository,
+                          RealtimeNotificationService notificationService) {
         this.demandeRepository = demandeRepository;
         this.serviceRepository = serviceRepository;
         this.clientRepository = clientRepository;
+        this.reservationRepository = reservationRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Demande> findAll() { return demandeRepository.findAll(); }
 
     public List<Demande> findByClient(Long clientId) {
         if (clientId == null) {
-            clientId = 1L;
+            return Collections.emptyList();
         }
-        List<Demande> list = demandeRepository.findByClient_IdUtilisateur(clientId);
-        if (list.isEmpty() && clientId != 1L) {
-            List<Demande> fallback = demandeRepository.findByClient_IdUtilisateur(1L);
-            if (!fallback.isEmpty()) return fallback;
-        }
-        return list;
+        return demandeRepository.findByClient_IdUtilisateur(clientId);
     }
 
     public Demande findById(Long id) {
@@ -60,20 +65,24 @@ public class DemandeService {
         }
 
         Long clientId = request.getClientId();
-        Client client = null;
-        if (clientId != null) {
-            client = clientRepository.findById(clientId).orElse(null);
+        if (clientId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Identifiant client obligatoire");
         }
-        if (client == null) {
-            client = clientRepository.findById(1L).orElse(null);
-        }
-        if (client == null) {
-            List<Client> clients = clientRepository.findAll();
-            if (!clients.isEmpty()) {
-                client = clients.get(0);
-            } else {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Client introuvable");
-            }
+        Client client = clientRepository.findById(clientId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Client introuvable: " + clientId));
+
+        // CDC01 & REQ-RES-ACT : Vérification stricte de l'éligibilité du séjour (réservation active)
+        LocalDate today = LocalDate.now();
+        List<Reservation> clientReservations = reservationRepository.findByClient_IdUtilisateur(clientId);
+        boolean hasActiveStay = clientReservations.stream().anyMatch(r ->
+                (r.getStatut() == StatutReservation.EN_COURS || r.getStatut() == StatutReservation.CONFIRMEE)
+                && (r.getDateDebut() == null || !today.isBefore(r.getDateDebut()))
+                && (r.getDateFin() == null || !today.isAfter(r.getDateFin()))
+        );
+
+        if (!hasActiveStay) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Action refusée : aucune réservation active trouvée à la date d'aujourd'hui pour ce client.");
         }
 
         Demande demande = new Demande();
@@ -93,8 +102,17 @@ public class DemandeService {
             ref = ref + "-" + (int) (Math.random() * 900 + 100);
         }
         demande.setReferenceDemande(ref);
+        if (request.getCommentairesClient() != null && !request.getCommentairesClient().isBlank()) {
+            demande.setCommentairesClient(request.getCommentairesClient().trim());
+        }
 
-        return demandeRepository.save(demande);
+        Demande saved = demandeRepository.save(demande);
+        try {
+            notificationService.notifyNewDemande(saved);
+        } catch (Exception e) {
+            // Ne bloque pas la création en cas d'erreur de notification
+        }
+        return saved;
     }
 
     public Demande update(Long id, DemandeUpdateRequest request) {
@@ -105,7 +123,18 @@ public class DemandeService {
         if (request.motifAnnulation() != null) demande.setMotifAnnulation(request.motifAnnulation());
         if (request.tempsTraitementReel() != null) demande.setTempsTraitementReel(request.tempsTraitementReel());
         demande.setDateModification(LocalDateTime.now());
-        return demandeRepository.save(demande);
+        Demande saved = demandeRepository.save(demande);
+
+        try {
+            if (request.statut() == StatutDemande.REJETEE) {
+                notificationService.notifyTaskRejected(saved, request.motifRejet());
+            } else if (request.statut() == StatutDemande.ANNULEE) {
+                notificationService.notifyTaskCancelled(saved, request.motifAnnulation());
+            }
+        } catch (Exception e) {
+            // Ne bloque pas la mise à jour
+        }
+        return saved;
     }
 
     public void delete(Long id) { demandeRepository.delete(findById(id)); }
