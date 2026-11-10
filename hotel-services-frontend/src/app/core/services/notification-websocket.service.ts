@@ -52,7 +52,16 @@ export class NotificationWebSocketService implements OnDestroy {
           timestamp: h.dateCreation,
           read: !!h.dateLecture,
         }));
-        this.notifications.set(items);
+        // La réponse HTTP peut arriver après un événement WebSocket reçu à la
+        // connexion. Fusionner pour ne pas faire disparaître cette notification.
+        const knownIds = new Set(items.map(item => item.idNotification));
+        const liveItems = this.notifications().filter(item => {
+          if (item.idNotification) return !knownIds.has(item.idNotification);
+          return !items.some(saved => saved.titre === item.titre
+            && saved.message === item.message
+            && saved.idDemande === item.idDemande);
+        });
+        this.notifications.set([...liveItems, ...items].slice(0, 100));
       },
       error: (err) => console.warn('Notifications history fetch error:', err)
     });
@@ -79,8 +88,8 @@ export class NotificationWebSocketService implements OnDestroy {
     this.ws.onopen = () => {
       this.connected.set(true);
       this.clearReconnectTimer();
-      // Envoyer un payload AUTH explicite
-      this.send({ type: 'SUBSCRIBE', token: this.token, departementId: this.departementId });
+      // Récupérer les notifications reçues pendant une coupure réseau.
+      this.loadHistory();
     };
 
     this.ws.onmessage = (evt: MessageEvent<string>) => {
@@ -159,12 +168,6 @@ export class NotificationWebSocketService implements OnDestroy {
     return this.http.get<{ unreadCount: number }>(`${API_URL}/unread-count`).pipe(
       map(res => res?.unreadCount ?? 0)
     );
-  }
-
-  private send(payload: object): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(payload));
-    }
   }
 
   private scheduleReconnect(): void {
