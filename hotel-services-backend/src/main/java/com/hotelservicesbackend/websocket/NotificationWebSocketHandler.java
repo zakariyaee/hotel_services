@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hotelservicesbackend.dto.notification.WebSocketNotificationEvent;
 import com.hotelservicesbackend.entity.enums.Role;
+import com.hotelservicesbackend.repository.EmployeRepository;
 import com.hotelservicesbackend.security.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
     private static final Logger log = LoggerFactory.getLogger(NotificationWebSocketHandler.class);
 
     private final JwtUtil jwtUtil;
+    private final EmployeRepository employeRepository;
     private final ObjectMapper objectMapper;
 
     // Sessions indexées
@@ -38,8 +40,9 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
     public record SessionMetadata(Long userId, String email, Role role, Long departementId) {}
 
-    public NotificationWebSocketHandler(JwtUtil jwtUtil) {
+    public NotificationWebSocketHandler(JwtUtil jwtUtil, EmployeRepository employeRepository) {
         this.jwtUtil = jwtUtil;
+        this.employeRepository = employeRepository;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
     }
@@ -54,11 +57,8 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
         if (uri != null && uri.getQuery() != null) {
             Map<String, String> params = parseQuery(uri.getQuery());
             String token = params.get("token");
-            String deptParam = params.get("departementId");
-            Long deptId = deptParam != null && !deptParam.isBlank() ? Long.parseLong(deptParam) : null;
-
             if (token != null && !token.isBlank()) {
-                authenticateAndRegister(session, token, deptId);
+                authenticateAndRegister(session, token);
             }
         }
     }
@@ -74,16 +74,8 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
             if ("SUBSCRIBE".equalsIgnoreCase(type) || "AUTH".equalsIgnoreCase(type)) {
                 String token = (String) map.get("token");
-                Object deptObj = map.get("departementId");
-                Long deptId = null;
-                if (deptObj instanceof Number num) {
-                    deptId = num.longValue();
-                } else if (deptObj instanceof String s && !s.isBlank()) {
-                    deptId = Long.parseLong(s);
-                }
-
                 if (token != null && !token.isBlank()) {
-                    authenticateAndRegister(session, token, deptId);
+                    authenticateAndRegister(session, token);
                 }
             } else if ("PING".equalsIgnoreCase(type)) {
                 session.sendMessage(new TextMessage("{\"type\":\"PONG\",\"timestamp\":\"" + System.currentTimeMillis() + "\"}"));
@@ -125,14 +117,23 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
         log.info("🔌 WebSocket: Session fermée -> id: {}, code: {}", session.getId(), status.getCode());
     }
 
-    private void authenticateAndRegister(WebSocketSession session, String token, Long departementId) {
+    private void authenticateAndRegister(WebSocketSession session, String token) {
         try {
             String email = jwtUtil.extractUsername(token);
             Long userId = jwtUtil.extractUserId(token);
             String roleStr = jwtUtil.extractRole(token);
             Role role = roleStr != null ? Role.valueOf(roleStr) : null;
 
-            SessionMetadata meta = new SessionMetadata(userId, email, role, departementId);
+            // Ne pas dépendre d'un departementId fourni par le navigateur : les écrans
+            // du personnel se connectent avec le seul JWT. Le département est déduit
+            // du compte authentifié afin que les notifications d'équipe lui parviennent.
+            Long resolvedDepartmentId = userId == null ? null : employeRepository.findById(userId)
+                    .map(employe -> employe.getDepartement() != null
+                            ? employe.getDepartement().getIdDepartement()
+                            : null)
+                    .orElse(null);
+
+            SessionMetadata meta = new SessionMetadata(userId, email, role, resolvedDepartmentId);
             sessionMetadata.put(session.getId(), meta);
 
             if (userId != null) {
@@ -141,12 +142,12 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
             if (role != null) {
                 roleSessions.computeIfAbsent(role, k -> new CopyOnWriteArraySet<>()).add(session);
             }
-            if (departementId != null) {
-                departmentSessions.computeIfAbsent(departementId, k -> new CopyOnWriteArraySet<>()).add(session);
+            if (resolvedDepartmentId != null) {
+                departmentSessions.computeIfAbsent(resolvedDepartmentId, k -> new CopyOnWriteArraySet<>()).add(session);
             }
 
             log.info("✅ WebSocket: Session {} enregistrée avec succès (User: {}, Role: {}, Dpt: {})",
-                    session.getId(), email, role, departementId);
+                    session.getId(), email, role, resolvedDepartmentId);
 
             // Accusé de réception
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(Map.of(
