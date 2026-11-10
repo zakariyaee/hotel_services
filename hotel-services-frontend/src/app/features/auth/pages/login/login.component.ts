@@ -85,13 +85,13 @@ export class LoginComponent implements OnInit, OnDestroy {
         { facingMode: 'environment' },
         {
           fps: 10,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
+          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
             const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
             const box = Math.max(180, Math.floor(minEdge * 0.72));
             return { width: box, height: box };
           },
         },
-        (decodedText) => {
+        (decodedText: string) => {
           this.handleQrDecoded(decodedText);
         },
         () => {
