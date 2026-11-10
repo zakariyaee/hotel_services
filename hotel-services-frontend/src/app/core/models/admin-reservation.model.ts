@@ -18,6 +18,7 @@ export interface AdminReservation {
 }
 
 export interface CreateReservationDto {
+  idClient?: number;
   clientNom: string;
   clientPrenom: string;
   clientEmail: string;

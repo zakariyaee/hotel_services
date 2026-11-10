@@ -136,12 +136,25 @@
   <!-- TAB 2: SERVICES & SUPERVISION -->
   @if (activeTab === 'services') {
     <div class="tab-content services-view">
+      <div class="services-heading">
+        <div>
+          <span class="section-tag">Catalogue opérationnel</span>
+          <h2>Services &amp; Supervision</h2>
+          <p>Configurez les prestations proposées aux clients et le circuit de traitement de chaque demande.</p>
+        </div>
+        <div class="services-summary">
+          <span class="summary-dot"></span>
+          <strong>{{ services().length }}</strong>
+          <span>service{{ services().length > 1 ? 's' : '' }} configuré{{ services().length > 1 ? 's' : '' }}</span>
+        </div>
+      </div>
       <div class="crud-grid">
         <!-- Formulaire Service -->
-        <article class="card form-card">
+        <article class="card form-card service-form-card">
           <div class="card-header">
+            <div class="card-kicker">{{ serviceId === null ? 'Nouveau catalogue' : 'Édition du catalogue' }}</div>
             <h3>{{ serviceId === null ? 'Ajouter un service' : 'Modifier le service' }}</h3>
-            <p>Définissez les règles d'assignation : directes par l'employé ou supervisées.</p>
+            <p>Définissez les informations visibles et le mode de prise en charge.</p>
           </div>
           <form (ngSubmit)="saveService()" class="styled-form">
             <div class="form-group">
@@ -187,6 +200,13 @@
 
             <!-- Configuration Supervision / Auto-assignation -->
             <div class="supervision-box">
+              <div class="supervision-heading">
+                <span class="supervision-icon">◎</span>
+                <span>
+                  <strong>Règle de supervision</strong>
+                  <small>Choisissez qui prend la demande en charge.</small>
+                </span>
+              </div>
               <label class="checkbox-container">
                 <input name="serviceSupervision" type="checkbox" [(ngModel)]="serviceForm.necessiteSupervision">
                 <span class="checkmark"></span>
@@ -204,7 +224,7 @@
             </label>
 
             <div class="form-actions">
-              <button type="submit" class="btn btn-primary">Enregistrer le service</button>
+              <button type="submit" class="btn btn-primary">{{ serviceId === null ? 'Ajouter le service' : 'Enregistrer les modifications' }}</button>
               @if (serviceId !== null) {
                 <button type="button" class="btn btn-secondary" (click)="cancelService()">Annuler</button>
               }
@@ -213,13 +233,25 @@
         </article>
 
         <!-- Liste des Services -->
-        <article class="card list-card">
+        <article class="card list-card service-catalog-card">
           <div class="card-header">
-            <h3>Catalogue des services ({{ services().length }})</h3>
+            <div>
+              <div class="card-kicker">Vue d'ensemble</div>
+              <h3>Catalogue des services</h3>
+            </div>
+            <span class="catalog-count">{{ services().length }}</span>
           </div>
           <div class="services-list">
+            @if (services().length === 0) {
+              <div class="services-empty">
+                <div class="empty-service-icon">✦</div>
+                <strong>Votre catalogue est vide</strong>
+                <p>Ajoutez votre première prestation pour la rendre disponible aux clients.</p>
+              </div>
+            }
             @for (service of services(); track service.idService) {
               <div class="service-item">
+                <div class="service-icon">{{ service.nom.charAt(0).toUpperCase() }}</div>
                 <div class="service-main">
                   <div class="service-title-row">
                     <strong>{{ service.nom }}</strong>
@@ -307,7 +339,7 @@
                         Équipe du département ({{ getPersonnelForDepartement(dept.idDepartement).length }})
                       </span>
                       <button type="button" class="btn-assign-small" (click)="openAssignPersonnelModal(dept)">
-                        + Assigner du personnel
+                        + Assigner
                       </button>
                     </div>
 
@@ -572,28 +604,47 @@
         </div>
 
         <form (ngSubmit)="saveReservation()" class="styled-form">
-          <div class="form-section-title">Coordonnées du Client</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nom *</label>
-              <input name="resNom" [(ngModel)]="reservationForm.clientNom" placeholder="Ex: Benali" required>
-            </div>
-            <div class="form-group">
-              <label>Prénom *</label>
-              <input name="resPrenom" [(ngModel)]="reservationForm.clientPrenom" placeholder="Ex: Karim" required>
-            </div>
+          <div class="form-section-title">Client</div>
+          <div class="client-choice" role="group" aria-label="Choix du client">
+            <button type="button" class="choice-button" [class.active]="clientMode === 'existing'" (click)="selectClientMode('existing')">Client existant</button>
+            <button type="button" class="choice-button" [class.active]="clientMode === 'new'" (click)="selectClientMode('new')">+ Créer un client</button>
           </div>
 
-          <div class="form-row">
+          @if (clientMode === 'existing') {
             <div class="form-group">
-              <label>Email client * (pour l'envoi du pass)</label>
-              <input name="resEmail" type="email" [(ngModel)]="reservationForm.clientEmail" placeholder="client@exemple.com" required>
+              <label for="resClient">Sélectionner un client *</label>
+              <select id="resClient" name="resClient" [(ngModel)]="reservationForm.idClient" required>
+                <option [ngValue]="undefined">Choisir un client...</option>
+                @for (client of clients(); track client.idUtilisateur) {
+                  <option [ngValue]="client.idUtilisateur">{{ client.prenom }} {{ client.nom }} — {{ client.email }}{{ client.tel ? ' · ' + client.tel : '' }}</option>
+                }
+              </select>
+              @if (clients().length === 0) {
+                <small class="field-hint">Aucun client existant. Utilisez « Créer un client ».</small>
+              }
             </div>
-            <div class="form-group">
-              <label>Téléphone</label>
-              <input name="resTel" [(ngModel)]="reservationForm.clientTel" placeholder="+212 6 00 00 00 00">
+          } @else {
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nom *</label>
+                <input name="resNom" [(ngModel)]="reservationForm.clientNom" placeholder="Ex: Benali" required>
+              </div>
+              <div class="form-group">
+                <label>Prénom *</label>
+                <input name="resPrenom" [(ngModel)]="reservationForm.clientPrenom" placeholder="Ex: Karim" required>
+              </div>
             </div>
-          </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Email client * (pour l'envoi du pass)</label>
+                <input name="resEmail" type="email" [(ngModel)]="reservationForm.clientEmail" placeholder="client@exemple.com" required>
+              </div>
+              <div class="form-group">
+                <label>Téléphone</label>
+                <input name="resTel" [(ngModel)]="reservationForm.clientTel" placeholder="+212 6 00 00 00 00">
+              </div>
+            </div>
+          }
 
           <div class="form-section-title">Séjour & Chambre</div>
           <div class="form-group">
@@ -627,7 +678,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             <div>
               <strong>Automatisation complète :</strong>
-              <p>Le système va créer le compte client, attribuer un code de séjour unique (ex: <code>RES-948210</code>), générer le QR Code de connexion automatique et envoyer les identifiants par email.</p>
+              <p>{{ clientMode === 'existing' ? 'Le client sélectionné sera réutilisé comme source unique de vérité.' : 'Un nouveau compte client sera créé.' }} Le système attribuera ensuite un code de séjour unique (ex: <code>RES-948210</code>), générera le QR Code et enverra les informations par email.</p>
             </div>
           </div>
 

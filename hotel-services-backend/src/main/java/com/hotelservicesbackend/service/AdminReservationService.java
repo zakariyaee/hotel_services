@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class AdminReservationService {
@@ -75,23 +76,30 @@ public class AdminReservationService {
         Chambre chambre = chambreRepository.findById(request.idChambre())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chambre introuvable"));
 
-        // 2. Recherche ou Création du Client
-        String email = request.clientEmail().trim().toLowerCase();
+        // 2. Sélection d'un client existant ou création explicite d'un nouveau client.
         String generatedCode = generateAccessCode();
-
-        Client client = clientRepository.findByEmail(email).orElseGet(() -> {
+        Client client;
+        if (request.idClient() != null) {
+            client = clientRepository.findById(request.idClient())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Client introuvable"));
+        } else {
+            validateNewClient(request);
+            String email = request.clientEmail().trim().toLowerCase(Locale.ROOT);
+            if (clientRepository.findByEmail(email).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Un client existe déjà avec cet email. Sélectionnez-le dans la liste des clients.");
+            }
             Client newClient = new Client();
             newClient.setEmail(email);
             newClient.setRole(Role.CLIENT);
             newClient.setLanguePreferee("FR");
             newClient.setPreferenceNotification(true);
-            return newClient;
-        });
-
-        client.setNom(request.clientNom().trim());
-        client.setPrenom(request.clientPrenom().trim());
-        if (request.clientTel() != null && !request.clientTel().isBlank()) {
-            client.setTel(request.clientTel().trim());
+            client = newClient;
+            client.setNom(request.clientNom().trim());
+            client.setPrenom(request.clientPrenom().trim());
+            if (request.clientTel() != null && !request.clientTel().isBlank()) {
+                client.setTel(request.clientTel().trim());
+            }
         }
         // Le code de réservation devient le mot de passe du client pour le login unifié
         client.setMotDePasse(passwordEncoder.encode(generatedCode));
@@ -160,6 +168,18 @@ public class AdminReservationService {
                 qrCodeBase64,
                 loginUrl
         );
+    }
+
+    private void validateNewClient(CreateReservationRequest request) {
+        if (request.clientNom() == null || request.clientNom().isBlank()
+                || request.clientPrenom() == null || request.clientPrenom().isBlank()
+                || request.clientEmail() == null || request.clientEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le nom, le prénom et l'email sont obligatoires pour créer un client.");
+        }
+        if (!request.clientEmail().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Format d'email invalide");
+        }
     }
 
     private AdminReservationResponse mapToResponse(Reservation r) {

@@ -6,12 +6,14 @@ import { DepartementService } from '../../core/services/departement.service';
 import { ChambreService } from '../../core/services/chambre.service';
 import { AdminReservationService } from '../../core/services/admin-reservation.service';
 import { AdminUtilisateurService } from '../../core/services/admin-utilisateur.service';
+import { ClientService } from '../../core/services/client.service';
 import { Service } from '../../core/models/service.model';
 import { Departement } from '../../core/models/departement.model';
 import { Chambre } from '../../core/models/chambre.model';
 import { AdminReservation, CreateReservationDto } from '../../core/models/admin-reservation.model';
 import { AdminUtilisateur, CreateAdminUtilisateurDto } from '../../core/models/admin-utilisateur.model';
 import { Role } from '../../core/models/enums.model';
+import { Client } from '../../core/models/client.model';
 
 @Component({
   selector: 'app-admin-crud',
@@ -30,6 +32,7 @@ export class AdminCrudComponent implements OnInit {
   readonly departements = signal<Departement[]>([]);
   readonly chambres = signal<Chambre[]>([]);
   readonly utilisateurs = signal<AdminUtilisateur[]>([]);
+  readonly clients = signal<Client[]>([]);
   readonly message = signal('');
   readonly isLoading = signal(false);
 
@@ -38,6 +41,7 @@ export class AdminCrudComponent implements OnInit {
   showPassModal = false;
   selectedReservation: AdminReservation | null = null;
   copiedLink = false;
+  clientMode: 'existing' | 'new' = 'existing';
 
   reservationForm: CreateReservationDto = {
     clientNom: '',
@@ -96,7 +100,8 @@ export class AdminCrudComponent implements OnInit {
     private departementApi: DepartementService,
     private chambreApi: ChambreService,
     private adminReservationApi: AdminReservationService,
-    private utilisateurApi: AdminUtilisateurService
+    private utilisateurApi: AdminUtilisateurService,
+    private clientApi: ClientService
   ) {}
 
   ngOnInit(): void {
@@ -114,6 +119,7 @@ export class AdminCrudComponent implements OnInit {
     this.reloadDepartements();
     this.reloadChambres();
     this.reloadUtilisateurs();
+    this.reloadClients();
   }
 
   reloadReservations(): void {
@@ -161,7 +167,17 @@ export class AdminCrudComponent implements OnInit {
       dateFin: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
       typeReservation: 'Séjour Prestige',
     };
+    this.clientMode = this.clients().length > 0 ? 'existing' : 'new';
     this.showCreateReservationModal = true;
+  }
+
+  selectClientMode(mode: 'existing' | 'new'): void {
+    this.clientMode = mode;
+    this.reservationForm.idClient = undefined;
+    this.reservationForm.clientNom = '';
+    this.reservationForm.clientPrenom = '';
+    this.reservationForm.clientEmail = '';
+    this.reservationForm.clientTel = '';
   }
 
   closeCreateReservationModal(): void {
@@ -169,8 +185,12 @@ export class AdminCrudComponent implements OnInit {
   }
 
   saveReservation(): void {
-    if (!this.reservationForm.clientNom || !this.reservationForm.clientEmail) {
-      this.message.set('Veuillez renseigner le nom et l’email du client.');
+    if (this.clientMode === 'existing' && !this.reservationForm.idClient) {
+      this.message.set('Veuillez sélectionner un client existant.');
+      return;
+    }
+    if (this.clientMode === 'new' && (!this.reservationForm.clientNom || !this.reservationForm.clientPrenom || !this.reservationForm.clientEmail)) {
+      this.message.set('Veuillez renseigner le nom, le prénom et l’email du nouveau client.');
       return;
     }
 
@@ -320,6 +340,13 @@ export class AdminCrudComponent implements OnInit {
     this.utilisateurApi.getAll().subscribe({
       next: data => this.utilisateurs.set(data),
       error: err => console.warn('Could not load users', err),
+    });
+  }
+
+  reloadClients(): void {
+    this.clientApi.getAll().subscribe({
+      next: data => this.clients.set(data),
+      error: err => console.warn('Could not load clients', err),
     });
   }
 
