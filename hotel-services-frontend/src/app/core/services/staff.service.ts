@@ -6,7 +6,8 @@ import {
   StaffMember,
   ReceptionOverview,
   RoomGuestOption,
-  ReceptionCreateRequest
+  ReceptionCreateRequest,
+  StaffProfile
 } from '../models/staff.model';
 
 @Injectable({
@@ -22,6 +23,10 @@ export class StaffService {
   // =========================================================================
   getMyTasks(): Observable<StaffDemande[]> {
     return this.http.get<StaffDemande[]>(`${this.baseUrl}/employe/my-tasks`);
+  }
+
+  getEmployeeProfile(): Observable<StaffProfile> {
+    return this.http.get<StaffProfile>(`${this.baseUrl}/employe/profile`);
   }
 
   getAvailablePool(): Observable<StaffDemande[]> {

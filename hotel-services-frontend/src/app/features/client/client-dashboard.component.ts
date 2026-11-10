@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { HotelServiceService } from '../../core/services/service.service';
 import { DemandeService } from '../../core/services/demande.service';
 import { Service } from '../../core/models/service.model';
-import { Demande, CreateDemandeDto } from '../../core/models/demande.model';
+import { Demande, CreateDemandeDto, HistoriqueDemande } from '../../core/models/demande.model';
 import { NotificationWebSocketService } from '../../core/services/notification-websocket.service';
 import { NotificationBellComponent } from '../../shared/notification-bell/notification-bell.component';
 
@@ -64,100 +64,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   showNotifications = false;
   showDemandDetailModal = false;
   selectedModalDemande: ActiveDemandeDisplay | null = null;
+  demandeHistory = signal<HistoriqueDemande[]>([]);
 
-  // 6 Services Cards according to Maison Élan design with static backendId mapping
-  serviceCards: ServiceCardDef[] = [
-    {
-      id: 'room-service',
-      title: 'Room service',
-      subtitle: 'Carte disponible 24h/24',
-      estimate: '25-35 min',
-      defaultMinutes: 35,
-      icon: 'utensils',
-      iconClass: 'icon-room',
-      serviceCategory: 'SERVICE EN CHAMBRE',
-      formTitle: 'Commander le room service',
-      formDesc: 'Savourez nos plateaux gourmets préparés par le chef et servis en chambre.',
-      needs: ['Menu Gourmet complet', 'Plateau dégustation', 'Boissons fraîches & Vins', 'Couverts supplémentaires'],
-      placeholder: 'Ex. Cuisson à point, sans gluten, ajouter des serviettes...',
-      backendId: 1,
-    },
-    {
-      id: 'menage',
-      title: 'Ménage',
-      subtitle: 'Nettoyage de votre chambre',
-      estimate: '15-25 min',
-      defaultMinutes: 20,
-      icon: 'sparkles',
-      iconClass: 'icon-menage',
-      serviceCategory: 'SERVICE EN CHAMBRE',
-      formTitle: 'Demander le ménage',
-      formDesc: 'Notre équipe prend soin de votre chambre selon vos préférences.',
-      needs: ['Nettoyage complet', 'Faire le lit', 'Vider les poubelles', 'Réassort salle de bain'],
-      placeholder: 'Ex. Merci de ne pas changer les draps...',
-      backendId: 3,
-    },
-    {
-      id: 'blanchisserie',
-      title: 'Blanchisserie',
-      subtitle: 'Collecte et retour en chambre',
-      estimate: 'Dans la journée',
-      defaultMinutes: 180,
-      icon: 'laundry',
-      iconClass: 'icon-laundry',
-      serviceCategory: 'SERVICE EN CHAMBRE',
-      formTitle: 'Demander la blanchisserie',
-      formDesc: 'Collecte en chambre et traitement soigné de vos vêtements et textiles.',
-      needs: ['Nettoyage à sec', 'Repassage soigné', 'Lavage express', 'Pliage & Pressing délicat'],
-      placeholder: 'Ex. Prendre soin de la doublure en soie du costume...',
-      backendId: 4,
-    },
-    {
-      id: 'maintenance',
-      title: 'Maintenance',
-      subtitle: 'Signaler un problème',
-      estimate: '10-20 min',
-      defaultMinutes: 15,
-      icon: 'wrench',
-      iconClass: 'icon-maintenance',
-      serviceCategory: 'SERVICE EN CHAMBRE',
-      formTitle: 'Signaler une maintenance',
-      formDesc: 'Intervention technique rapide pour tout équipement de votre chambre.',
-      needs: ['Climatisation / Chauffage', 'Télévision & Wi-Fi', 'Plomberie & Eau chaude', 'Éclairage / Serrure'],
-      placeholder: 'Ex. La télécommande ne répond plus, piles à changer...',
-      backendId: 7,
-    },
-    {
-      id: 'conciergerie',
-      title: 'Conciergerie',
-      subtitle: 'Conseils et réservations',
-      estimate: 'Réponse rapide',
-      defaultMinutes: 15,
-      icon: 'bell',
-      iconClass: 'icon-concierge',
-      serviceCategory: 'SERVICE EN CHAMBRE',
-      formTitle: 'Contacter la conciergerie',
-      formDesc: 'Conseils personnalisés, réservations exclusives et transports privés.',
-      needs: ['Réservation restaurant', 'Navette aéroport / Taxi', 'Billetterie spectacle & musée', 'Bagages & Gardiennage'],
-      placeholder: 'Ex. Table pour 2 personnes près du Louvre ce soir vers 20h30...',
-      backendId: 5,
-    },
-    {
-      id: 'reveil',
-      title: 'Service de réveil',
-      subtitle: 'Programmer un appel',
-      estimate: 'À l\'heure choisie',
-      defaultMinutes: 10,
-      icon: 'clock',
-      iconClass: 'icon-reveil',
-      serviceCategory: 'SERVICE EN CHAMBRE',
-      formTitle: 'Programmer un réveil',
-      formDesc: 'Notre réceptionniste vous appelle personnellement à l\'heure convenue.',
-      needs: ['Appel téléphonique personnalisé', 'Café expresso en chambre', 'Point météo & vols', 'Rappel 15 min après'],
-      placeholder: 'Ex. Merci de sonner fermement ou de rappeler en cas de non-réponse...',
-      backendId: 6,
-    },
-  ];
+  // Les cartes sont construites depuis le catalogue administré en base.
+  serviceCards: ServiceCardDef[] = [];
 
   // Screen 2 Form State
   selectedServiceCard: ServiceCardDef | null = null;
@@ -275,8 +185,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   loadBackendData(): void {
     this.isLoading.set(true);
 
-    // 1. Fetch hotel services and synchronize with cards
-    this.serviceService.getAll().subscribe({
+    // 1. Le client ne voit que les services actifs du catalogue admin.
+    this.serviceService.getAvailable().subscribe({
       next: (svcs) => {
         this.services.set(svcs);
         this.mapServicesToCards(svcs);
@@ -308,26 +218,42 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   }
 
   private mapServicesToCards(svcs: Service[]): void {
-    for (const card of this.serviceCards) {
-      let match: Service | undefined;
-      if (card.id === 'room-service') {
-        match = svcs.find((s) => s.nom.toLowerCase().includes('room') || s.idService === 1);
-      } else if (card.id === 'menage') {
-        match = svcs.find((s) => s.nom.toLowerCase().includes('nage') || s.nom.toLowerCase().includes('ménage') || s.idService === 3);
-      } else if (card.id === 'blanchisserie') {
-        match = svcs.find((s) => s.nom.toLowerCase().includes('blanchisserie') || s.idService === 4);
-      } else if (card.id === 'maintenance') {
-        match = svcs.find((s) => s.nom.toLowerCase().includes('technique') || s.nom.toLowerCase().includes('maintenance') || s.idService === 7);
-      } else if (card.id === 'conciergerie') {
-        match = svcs.find((s) => s.nom.toLowerCase().includes('navette') || s.nom.toLowerCase().includes('concierge') || s.idService === 5);
-      } else if (card.id === 'reveil') {
-        match = svcs.find((s) => s.nom.toLowerCase().includes('veil') || s.nom.toLowerCase().includes('réveil') || s.idService === 6);
-      }
+    this.serviceCards = svcs
+      .filter(service => service.disponibilite && service.idService)
+      .map((service, index) => this.toServiceCard(service, index));
+  }
 
-      if (match && match.idService) {
-        card.backendId = match.idService;
-      }
-    }
+  private toServiceCard(service: Service, index: number): ServiceCardDef {
+    const title = service.nom.trim();
+    const minutes = service.dureeEstimee > 0 ? service.dureeEstimee : 30;
+    const icon = this.getServiceIcon(title, service.categorie);
+    const category = service.categorie?.trim() || service.nomDepartement?.trim() || 'SERVICE HÔTELIER';
+
+    return {
+      id: String(service.idService),
+      title,
+      subtitle: service.description?.trim() || `Prestation ${category.toLowerCase()}`,
+      estimate: `${Math.max(5, minutes - 5)}-${minutes + 5} min`,
+      defaultMinutes: minutes,
+      icon,
+      iconClass: `icon-service-${index % 6}`,
+      serviceCategory: category.toUpperCase(),
+      formTitle: `Demander : ${title}`,
+      formDesc: service.description?.trim() || `Notre équipe prend en charge votre demande de ${title.toLowerCase()}.`,
+      needs: ['Demande standard', 'Préférence particulière'],
+      placeholder: `Précisez votre besoin concernant « ${title} »...`,
+      backendId: service.idService!,
+    };
+  }
+
+  private getServiceIcon(name: string, category?: string): ServiceCardDef['icon'] {
+    const value = `${name} ${category ?? ''}`.toLowerCase();
+    if (value.includes('ménage') || value.includes('netto') || value.includes('housekeeping')) return 'sparkles';
+    if (value.includes('blanch') || value.includes('linge')) return 'laundry';
+    if (value.includes('maintenance') || value.includes('technique') || value.includes('répar')) return 'wrench';
+    if (value.includes('concier') || value.includes('réserv')) return 'bell';
+    if (value.includes('réveil') || value.includes('appel')) return 'clock';
+    return 'utensils';
   }
 
   // Navigation handlers
@@ -336,12 +262,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     this.selectedTiming = 'asap';
     this.customNotes = '';
 
-    // Pre-select default options for Ménage (matching screenshot)
-    if (card.id === 'menage') {
-      this.selectedNeeds = ['Nettoyage complet', 'Faire le lit'];
-    } else {
-      this.selectedNeeds = card.needs.length > 0 ? [card.needs[0]] : [];
-    }
+    this.selectedNeeds = card.needs.length > 0 ? [card.needs[0]] : [];
 
     this.currentView = 'request-form';
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -502,12 +423,20 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     };
     this.showCancelConfirm = false;
     this.cancelReason = '';
+    this.demandeHistory.set([]);
+    if (d.idDemande) {
+      this.demandeService.getHistory(d.idDemande).subscribe({
+        next: history => this.demandeHistory.set(history),
+        error: () => {},
+      });
+    }
     this.showDemandDetailModal = true;
   }
 
   closeDemandModal(): void {
     this.showDemandDetailModal = false;
     this.selectedModalDemande = null;
+    this.demandeHistory.set([]);
     this.showCancelConfirm = false;
     this.cancelReason = '';
   }

@@ -30,6 +30,15 @@ export interface StaffDemande {
   retardMinutes: number;
 }
 
+export interface StaffProfile {
+  idUtilisateur: number;
+  nom: string;
+  prenom: string;
+  poste?: string;
+  idDepartement?: number;
+  departementNom?: string;
+}
+
 export interface StaffMember {
   idUtilisateur: number;
   nom: string;

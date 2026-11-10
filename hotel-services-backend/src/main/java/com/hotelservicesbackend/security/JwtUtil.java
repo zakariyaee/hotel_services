@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import jakarta.annotation.PostConstruct;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -23,9 +24,20 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    private SecretKey signingKey;
+
+    @PostConstruct
+    void initializeSigningKey() {
+        if (secret == null || secret.isBlank()) {
+            // Développement local uniquement : la clé est régénérée au redémarrage.
+            signingKey = Keys.secretKeyFor(io.jsonwebtoken.SignatureAlgorithm.HS256);
+            return;
+        }
+        signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+    }
+
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return signingKey;
     }
 
     public String generateToken(UserDetails userDetails, Long userId, String role) {

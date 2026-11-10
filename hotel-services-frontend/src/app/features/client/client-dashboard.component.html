@@ -89,8 +89,14 @@
           </div>
         </div>
 
-        <!-- 6 CARDS GRID -->
+        <!-- SERVICES ADMINISTRÉS ET DISPONIBLES -->
         <div class="services-grid">
+          @if (serviceCards.length === 0 && !isLoading()) {
+            <div class="services-empty-client">
+              <strong>Aucun service disponible pour le moment</strong>
+              <span>Les prestations activées par l'administration apparaîtront ici.</span>
+            </div>
+          }
           @for (card of serviceCards; track card.id) {
             <article class="service-card" (click)="openServiceRequest(card)">
               <div class="service-card-top">
@@ -565,6 +571,22 @@
               </div>
             </div>
           </div>
+
+          @if (demandeHistory().length > 0) {
+            <div class="history-section">
+              <h4>Historique des changements</h4>
+              @for (event of demandeHistory(); track event.idHistorique) {
+                <div class="history-row">
+                  <span class="history-dot"></span>
+                  <div>
+                    <strong>{{ getStatutLabel(event.nouveauStatut) }}</strong>
+                    <small>{{ event.dateChangement | date:'dd/MM/yyyy HH:mm' }}{{ event.auteur ? ' · ' + event.auteur : '' }}</small>
+                    @if (event.commentaire) { <p>{{ event.commentaire }}</p> }
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
 
         <!-- Formulaire de motif d'annulation si déclenché -->
@@ -601,7 +623,7 @@
         }
 
         <div class="modal-footer">
-          @if (!showCancelConfirm && (selectedModalDemande.status === 'EN_ATTENTE' || selectedModalDemande.status === 'PRISE_EN_CHARGE')) {
+          @if (!showCancelConfirm && selectedModalDemande.status === 'EN_ATTENTE') {
             <button
               type="button"
               class="btn-cancel-demande"

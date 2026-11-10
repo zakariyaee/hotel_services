@@ -7,10 +7,13 @@ import com.hotelservicesbackend.dto.auth.LoginResponse;
 import com.hotelservicesbackend.entity.Chambre;
 import com.hotelservicesbackend.entity.Client;
 import com.hotelservicesbackend.entity.ClientAccessToken;
+import com.hotelservicesbackend.entity.Departement;
+import com.hotelservicesbackend.entity.Employe;
 import com.hotelservicesbackend.entity.Reservation;
 import com.hotelservicesbackend.entity.Utilisateur;
 import com.hotelservicesbackend.entity.enums.StatutReservation;
 import com.hotelservicesbackend.repository.ClientAccessTokenRepository;
+import com.hotelservicesbackend.repository.EmployeRepository;
 import com.hotelservicesbackend.repository.UtilisateurRepository;
 import com.hotelservicesbackend.security.JwtUtil;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,19 +34,22 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+    private final EmployeRepository employeRepository;
 
     public AuthService(
             UtilisateurRepository utilisateurRepository,
             ClientAccessTokenRepository clientAccessTokenRepository,
             AuthenticationManager authenticationManager,
             JwtUtil jwtUtil,
-            UserDetailsService userDetailsService
+            UserDetailsService userDetailsService,
+            EmployeRepository employeRepository
     ) {
         this.utilisateurRepository = utilisateurRepository;
         this.clientAccessTokenRepository = clientAccessTokenRepository;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.employeRepository = employeRepository;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -66,7 +72,15 @@ public class AuthService {
                 utilisateur.getIdUtilisateur(),
                 utilisateur.getEmail(),
                 utilisateur.getRole().name(),
-                token
+                token,
+                employeRepository.findById(utilisateur.getIdUtilisateur())
+                        .map(Employe::getDepartement)
+                        .map(Departement::getIdDepartement)
+                        .orElse(null),
+                employeRepository.findById(utilisateur.getIdUtilisateur())
+                        .map(Employe::getDepartement)
+                        .map(Departement::getNom)
+                        .orElse(null)
         );
     }
 

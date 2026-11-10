@@ -541,6 +541,47 @@
   font-size: 12px;
 }
 
+.statistics-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 18px;
+    border: 1px solid rgba(23, 42, 36, 0.08);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  }
+
+  .stat-value { color: #172a24; font-size: 24px; font-weight: 800; }
+  .stat-label { color: #74817c; font-size: 12px; }
+}
+
+.statistics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee9df;
+    color: #53635c;
+    font-size: 13px;
+
+    &:last-child { border-bottom: 0; }
+    strong { color: #172a24; }
+  }
+}
+
 /* SUPERVISION BOX TOGGLE */
 .supervision-box {
   padding: 14px;
@@ -771,6 +812,8 @@
       justify-content: flex-end;
     }
   }
+
+  .statistics-cards, .statistics-grid { grid-template-columns: 1fr; }
 }
 
 /* MODALS */

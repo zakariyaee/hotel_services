@@ -462,11 +462,57 @@
   }
 }
 
-/* 6 Services Grid */
+/* Services Grid alimentée par le catalogue administré */
 .services-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+}
+
+.services-empty-client {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 34px 24px;
+  border: 1px dashed #d7d4ca;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #183d34;
+  text-align: center;
+
+  span {
+    color: #71827b;
+    font-size: 13px;
+  }
+}
+
+.history-section {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #e8e6df;
+
+  h4 { margin: 0 0 12px; color: #183d34; font-size: 14px; }
+
+  .history-row {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+
+    .history-dot {
+      flex: 0 0 8px;
+      width: 8px;
+      height: 8px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: #c59b27;
+    }
+
+    strong, small, p { display: block; }
+    strong { color: #183d34; font-size: 12px; }
+    small { margin-top: 2px; color: #7b8a84; font-size: 11px; }
+    p { margin: 3px 0 0; color: #64736d; font-size: 11px; }
+  }
 }
 
 .service-card {

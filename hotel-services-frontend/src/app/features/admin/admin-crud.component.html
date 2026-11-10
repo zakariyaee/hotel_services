@@ -52,6 +52,12 @@
       <span>Équipe & Utilisateurs</span>
       <span class="badge">{{ utilisateurs().length }}</span>
     </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'statistiques'"
+      (click)="setTab('statistiques')">
+      <span>Statistiques</span>
+    </button>
   </nav>
 
   <!-- TAB 1: RESERVATIONS & QR PASS -->
@@ -405,6 +411,45 @@
           </div>
         </article>
       </div>
+    </div>
+  }
+
+  <!-- TAB: STATISTIQUES -->
+  @if (activeTab === 'statistiques') {
+    <div class="tab-content statistics-view">
+      <div class="content-toolbar">
+        <div>
+          <h2>Statistiques opérationnelles</h2>
+          <p class="section-desc">Suivez le volume des demandes, leur état et le temps moyen de traitement.</p>
+        </div>
+        <button class="btn btn-secondary" (click)="reloadStatistics()">Actualiser</button>
+      </div>
+
+      @if (statistics(); as stats) {
+        <div class="statistics-cards">
+          <div class="stat-card"><span class="stat-value">{{ stats.totalDemandes }}</span><span class="stat-label">Demandes totales</span></div>
+          <div class="stat-card"><span class="stat-value">{{ stats.demandesEnAttente }}</span><span class="stat-label">En attente</span></div>
+          <div class="stat-card"><span class="stat-value">{{ stats.demandesEnCours }}</span><span class="stat-label">En cours</span></div>
+          <div class="stat-card"><span class="stat-value">{{ stats.demandesTerminees }}</span><span class="stat-label">Terminées</span></div>
+          <div class="stat-card"><span class="stat-value">{{ stats.tempsMoyenTraitement | number:'1.0-1' }} min</span><span class="stat-label">Temps moyen</span></div>
+        </div>
+        <div class="statistics-grid">
+          <article class="card">
+            <div class="card-header"><h3>Demandes par département</h3></div>
+            @for (entry of stats.demandesParDepartement | keyvalue; track entry.key) {
+              <div class="stat-row"><span>{{ entry.key }}</span><strong>{{ entry.value }}</strong></div>
+            }
+          </article>
+          <article class="card">
+            <div class="card-header"><h3>Demandes par service</h3></div>
+            @for (entry of stats.demandesParService | keyvalue; track entry.key) {
+              <div class="stat-row"><span>{{ entry.key }}</span><strong>{{ entry.value }}</strong></div>
+            }
+          </article>
+        </div>
+      } @else {
+        <div class="empty-state"><div class="empty-icon">📊</div><h3>Statistiques indisponibles</h3><p>Les indicateurs seront affichés dès que l'API sera disponible.</p></div>
+      }
     </div>
   }
 

@@ -25,6 +25,11 @@ public class StaffController {
     // 1. ENDPOINTS EMPLOYÉ DE TERRAIN
     // =========================================================================
 
+    @GetMapping("/employe/profile")
+    public StaffProfileResponse getEmployeeProfile(Authentication authentication) {
+        return staffService.getEmployeeProfile(authentication.getName());
+    }
+
     @GetMapping("/employe/my-tasks")
     public List<StaffDemandeResponse> getMyTasks(Authentication authentication) {
         return staffService.getEmployeeTasks(authentication.getName());

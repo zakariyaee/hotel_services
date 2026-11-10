@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Demande, CreateDemandeDto } from '../models/demande.model';
+import { Demande, CreateDemandeDto, HistoriqueDemande } from '../models/demande.model';
 
 @Injectable({ providedIn: 'root' })
 export class DemandeService {
@@ -16,6 +16,10 @@ export class DemandeService {
 
   getById(id: number): Observable<Demande> {
     return this.http.get<Demande>(`${this.apiUrl}/${id}`);
+  }
+
+  getHistory(id: number): Observable<HistoriqueDemande[]> {
+    return this.http.get<HistoriqueDemande[]>(`${this.apiUrl}/${id}/historique`);
   }
 
   create(dto: CreateDemandeDto): Observable<Demande> {

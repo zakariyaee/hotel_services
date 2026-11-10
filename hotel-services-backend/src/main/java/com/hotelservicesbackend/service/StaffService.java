@@ -32,6 +32,7 @@ public class StaffService {
     private final AffectationRepository affectationRepository;
     private final DepartementRepository departementRepository;
     private final RealtimeNotificationService notificationService;
+    private final HistoriqueDemandeService historiqueDemandeService;
 
     public StaffService(
             DemandeRepository demandeRepository,
@@ -44,7 +45,8 @@ public class StaffService {
             ReceptionnisteRepository receptionnisteRepository,
             AffectationRepository affectationRepository,
             DepartementRepository departementRepository,
-            RealtimeNotificationService notificationService
+            RealtimeNotificationService notificationService,
+            HistoriqueDemandeService historiqueDemandeService
     ) {
         this.demandeRepository = demandeRepository;
         this.employeRepository = employeRepository;
@@ -57,6 +59,7 @@ public class StaffService {
         this.affectationRepository = affectationRepository;
         this.departementRepository = departementRepository;
         this.notificationService = notificationService;
+        this.historiqueDemandeService = historiqueDemandeService;
     }
 
     private Employe getEmployeByEmail(String email) {
@@ -87,6 +90,19 @@ public class StaffService {
         Employe employe = getEmployeByEmail(email);
         List<Demande> list = demandeRepository.findByEmployeAssigne_IdUtilisateur(employe.getIdUtilisateur());
         return list.stream().map(this::mapToStaffDemandeResponse).collect(Collectors.toList());
+    }
+
+    public StaffProfileResponse getEmployeeProfile(String email) {
+        Employe employe = getEmployeByEmail(email);
+        Departement departement = employe.getDepartement();
+        return new StaffProfileResponse(
+                employe.getIdUtilisateur(),
+                employe.getNom(),
+                employe.getPrenom(),
+                employe.getPoste(),
+                departement != null ? departement.getIdDepartement() : null,
+                departement != null ? departement.getNom() : null
+        );
     }
 
     public List<StaffDemandeResponse> getAvailablePoolForEmployee(String email) {
@@ -124,12 +140,14 @@ public class StaffService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Cette tâche a déjà été prise par un autre employé.");
         }
 
+        StatutDemande ancienStatut = demande.getStatut();
         demande.setEmployeAssigne(employe);
         demande.setStatut(StatutDemande.EN_COURS);
         demande.setDatePriseEnCharge(LocalDateTime.now());
         demande.setDateModification(LocalDateTime.now());
 
         Demande saved = demandeRepository.save(demande);
+        historiqueDemandeService.record(saved, ancienStatut, saved.getStatut(), email, "Demande prise en charge");
         try { notificationService.notifyTaskClaimed(saved, employe); } catch (Exception ignored) {}
         return mapToStaffDemandeResponse(saved);
     }
@@ -149,6 +167,7 @@ public class StaffService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Action refusée : vous n'êtes pas l'employé assigné à cette tâche.");
         }
 
+        StatutDemande ancienStatut = demande.getStatut();
         demande.setStatut(StatutDemande.TERMINEE);
         demande.setDateResolution(LocalDateTime.now());
         demande.setDateCloture(LocalDateTime.now());
@@ -163,6 +182,7 @@ public class StaffService {
         }
 
         Demande saved = demandeRepository.save(demande);
+        historiqueDemandeService.record(saved, ancienStatut, saved.getStatut(), email, "Demande clôturée");
         try { notificationService.notifyTaskCompleted(saved, employe); } catch (Exception ignored) {}
         return mapToStaffDemandeResponse(saved);
     }
@@ -267,12 +287,14 @@ public class StaffService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sélection invalide : seul un employé de terrain (rôle EMPLOYE) peut être assigné à une tâche.");
         }
 
+        StatutDemande ancienStatut = demande.getStatut();
         demande.setEmployeAssigne(assignee);
         demande.setStatut(StatutDemande.EN_COURS);
         demande.setDatePriseEnCharge(LocalDateTime.now());
         demande.setDateModification(LocalDateTime.now());
 
         Demande saved = demandeRepository.save(demande);
+        historiqueDemandeService.record(saved, ancienStatut, saved.getStatut(), supervisorEmail, "Demande affectée à " + assignee.getPrenom() + " " + assignee.getNom());
 
         // CDC10 : Enregistrement de l'historique d'affectation
         try {
@@ -379,6 +401,12 @@ public class StaffService {
 
         com.hotelservicesbackend.entity.Service service = serviceRepository.findById(request.idService())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service introuvable: " + request.idService()));
+        if (!service.isDisponibilite()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce service est désactivé et ne peut plus recevoir de demande.");
+        }
+        if (service.getDepartement() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ce service n'est rattaché à aucun département.");
+        }
 
         Utilisateur recpUser = utilisateurRepository.findByEmail(receptionistEmail).orElse(null);
         Receptionniste recp = recpUser != null ? receptionnisteRepository.findById(recpUser.getIdUtilisateur()).orElse(null) : null;
@@ -395,6 +423,7 @@ public class StaffService {
         demande.setReferenceDemande("DEM-" + System.currentTimeMillis());
 
         Demande saved = demandeRepository.save(demande);
+        historiqueDemandeService.record(saved, null, saved.getStatut(), receptionistEmail, "Demande créée par la réception");
         try { notificationService.notifyNewDemande(saved); } catch (Exception ignored) {}
         return mapToStaffDemandeResponse(saved);
     }
@@ -409,10 +438,12 @@ public class StaffService {
         }
 
         String motifRejet = (motif != null && !motif.isBlank()) ? motif.trim() : "Non réalisable par les services de l'hôtel";
+        StatutDemande ancienStatut = demande.getStatut();
         demande.setStatut(StatutDemande.REJETEE);
         demande.setMotifRejet(motifRejet);
         demande.setDateModification(LocalDateTime.now());
         Demande saved = demandeRepository.save(demande);
+        historiqueDemandeService.record(saved, ancienStatut, saved.getStatut(), receptionistEmail, motifRejet);
 
         try {
             notificationService.notifyTaskRejected(saved, motifRejet);

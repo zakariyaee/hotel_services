@@ -31,3 +31,12 @@ export interface CreateDemandeDto {
   tempsTraitementEstime?: number;
   commentairesClient?: string;
 }
+
+export interface HistoriqueDemande {
+  idHistorique: number;
+  ancienStatut?: StatutDemande;
+  nouveauStatut: StatutDemande;
+  dateChangement: string;
+  auteur?: string;
+  commentaire?: string;
+}

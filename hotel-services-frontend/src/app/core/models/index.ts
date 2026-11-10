@@ -3,6 +3,7 @@ export * from './utilisateur.model';
 export * from './employe.model';
 export * from './client.model';
 export * from './departement.model';
+export * from './admin-statistics.model';
 export * from './service.model';
 export * from './caracteristiques.model';
 export * from './chambre.model';

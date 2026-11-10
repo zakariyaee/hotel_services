@@ -53,6 +53,25 @@ $line: rgba(23, 42, 36, 0.08);
       flex: 1;
       min-width: 0;
       strong { display: block; font-size: 13px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; }
+
+      .department-badge {
+        display: block;
+        margin-top: 6px;
+        overflow: hidden;
+        color: rgba(255,255,255,0.72);
+        font-size: 11px;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &::before {
+          content: '▸';
+          margin-right: 5px;
+          color: $gold;
+        }
+
+        &.unassigned { color: rgba(255,255,255,0.45); }
+      }
     }
   }
 

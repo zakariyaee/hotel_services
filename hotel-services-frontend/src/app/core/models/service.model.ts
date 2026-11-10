@@ -10,5 +10,7 @@ export interface Service {
   disponibilite: boolean;
   necessiteSupervision?: boolean;
   imageUrl?: string;
+  idDepartement?: number;
+  nomDepartement?: string;
   departement?: Departement;
 }

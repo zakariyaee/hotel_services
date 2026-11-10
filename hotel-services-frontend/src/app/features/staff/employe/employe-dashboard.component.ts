@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -19,6 +19,7 @@ import { NotificationBellComponent } from '../../../shared/notification-bell/not
 export class EmployeDashboardComponent implements OnInit, OnDestroy {
   myTasks = signal<StaffDemande[]>([]);
   poolTasks = signal<StaffDemande[]>([]);
+  departmentName = signal<string | null>(null);
   isLoading = signal(true);
   toastMsg = signal('');
   toastError = signal(false);
@@ -31,10 +32,22 @@ export class EmployeDashboardComponent implements OnInit, OnDestroy {
     public wsNotif: NotificationWebSocketService
   ) {}
 
+  private readonly refreshOnNewDemand = effect(() => {
+    const latest = this.wsNotif.notifications()[0];
+    if (latest?.type === 'NOUVELLE_DEMANDE' && latest.idDemande) {
+      this.loadAvailablePool();
+    }
+  });
+
   ngOnInit(): void {
+    this.departmentName.set(this.currentUser?.departementNom ?? null);
+    this.staffApi.getEmployeeProfile().subscribe({
+      next: profile => this.departmentName.set(profile.departementNom ?? null),
+      error: () => {},
+    });
     this.loadAll();
     const token = this.auth.getToken();
-    if (token) this.wsNotif.connect(token);
+    if (token) this.wsNotif.connect(token, this.currentUser?.idDepartement ?? null);
   }
 
   ngOnDestroy(): void {
@@ -47,6 +60,10 @@ export class EmployeDashboardComponent implements OnInit, OnDestroy {
       next: data => { this.myTasks.set(data); this.isLoading.set(false); },
       error: () => this.isLoading.set(false),
     });
+    this.loadAvailablePool();
+  }
+
+  private loadAvailablePool(): void {
     this.staffApi.getAvailablePool().subscribe({
       next: data => this.poolTasks.set(data),
       error: () => {},

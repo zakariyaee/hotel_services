@@ -7,6 +7,7 @@ import { ChambreService } from '../../core/services/chambre.service';
 import { AdminReservationService } from '../../core/services/admin-reservation.service';
 import { AdminUtilisateurService } from '../../core/services/admin-utilisateur.service';
 import { ClientService } from '../../core/services/client.service';
+import { AdminStatisticsService } from '../../core/services/admin-statistics.service';
 import { Service } from '../../core/models/service.model';
 import { Departement } from '../../core/models/departement.model';
 import { Chambre } from '../../core/models/chambre.model';
@@ -14,6 +15,7 @@ import { AdminReservation, CreateReservationDto } from '../../core/models/admin-
 import { AdminUtilisateur, CreateAdminUtilisateurDto } from '../../core/models/admin-utilisateur.model';
 import { Role } from '../../core/models/enums.model';
 import { Client } from '../../core/models/client.model';
+import { AdminStatistics } from '../../core/models/admin-statistics.model';
 
 @Component({
   selector: 'app-admin-crud',
@@ -24,7 +26,7 @@ import { Client } from '../../core/models/client.model';
 })
 export class AdminCrudComponent implements OnInit {
   // Navigation tabs in Admin
-  activeTab: 'reservations' | 'services' | 'departements' | 'utilisateurs' = 'reservations';
+  activeTab: 'reservations' | 'services' | 'departements' | 'utilisateurs' | 'statistiques' = 'reservations';
 
   // Signals for data
   readonly reservations = signal<AdminReservation[]>([]);
@@ -33,6 +35,7 @@ export class AdminCrudComponent implements OnInit {
   readonly chambres = signal<Chambre[]>([]);
   readonly utilisateurs = signal<AdminUtilisateur[]>([]);
   readonly clients = signal<Client[]>([]);
+  readonly statistics = signal<AdminStatistics | null>(null);
   readonly message = signal('');
   readonly isLoading = signal(false);
 
@@ -101,14 +104,15 @@ export class AdminCrudComponent implements OnInit {
     private chambreApi: ChambreService,
     private adminReservationApi: AdminReservationService,
     private utilisateurApi: AdminUtilisateurService,
-    private clientApi: ClientService
+    private clientApi: ClientService,
+    private statisticsApi: AdminStatisticsService
   ) {}
 
   ngOnInit(): void {
     this.reloadAll();
   }
 
-  setTab(tab: 'reservations' | 'services' | 'departements' | 'utilisateurs'): void {
+  setTab(tab: 'reservations' | 'services' | 'departements' | 'utilisateurs' | 'statistiques'): void {
     this.activeTab = tab;
     this.message.set('');
   }
@@ -120,6 +124,7 @@ export class AdminCrudComponent implements OnInit {
     this.reloadChambres();
     this.reloadUtilisateurs();
     this.reloadClients();
+    this.reloadStatistics();
   }
 
   reloadReservations(): void {
@@ -347,6 +352,13 @@ export class AdminCrudComponent implements OnInit {
     this.clientApi.getAll().subscribe({
       next: data => this.clients.set(data),
       error: err => console.warn('Could not load clients', err),
+    });
+  }
+
+  reloadStatistics(): void {
+    this.statisticsApi.get().subscribe({
+      next: data => this.statistics.set(data),
+      error: err => console.warn('Could not load statistics', err),
     });
   }
 
